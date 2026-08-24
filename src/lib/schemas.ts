@@ -73,6 +73,12 @@ export const layerSchema = z.object({
 	notes: z.string().default('')
 });
 
+/** A pedal tone held under the whole progression. `tritone` is the one that never resolves. */
+export const droneSchema = z.object({
+	note: text.default(''),
+	preset: z.enum(['tonic', 'tritone', 'custom']).default('custom')
+});
+
 export const songSchema = z.object({
 	id: slug,
 	title: z.string().min(1),
@@ -81,6 +87,7 @@ export const songSchema = z.object({
 	bpm: z.number().positive(),
 	status: z.enum(songStatuses),
 	progression: z.array(progressionStepSchema).default([]),
+	drone: droneSchema.optional(),
 	layers: z.array(layerSchema).default([]),
 	suno_overrides: z
 		.object({
@@ -94,4 +101,5 @@ export type Device = z.output<typeof deviceSchema>;
 export type Recipe = z.output<typeof recipeSchema>;
 export type RecipeParam = z.output<typeof recipeParamSchema>;
 export type Song = z.output<typeof songSchema>;
+export type Drone = z.output<typeof droneSchema>;
 export type Layer = z.output<typeof layerSchema>;

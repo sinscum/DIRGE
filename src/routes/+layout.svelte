@@ -4,7 +4,10 @@
 
 	let { children } = $props();
 
-	const nav = [{ href: '/', label: 'Rack' }];
+	const nav = [
+		{ href: '/', label: 'Rack' },
+		{ href: '/forge', label: 'Forge' }
+	];
 
 	function current(href: string): 'page' | undefined {
 		if (href === '/') {

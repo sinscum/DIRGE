@@ -244,6 +244,7 @@ blockquote {
 
 input[type='search'],
 input[type='text'],
+input[type='number'],
 select {
 	font-family: var(--font-mono);
 	font-size: 0.85rem;
