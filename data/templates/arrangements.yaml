@@ -1,0 +1,30 @@
+# Reusable layer skeletons for the arrangement planner.
+# The genre rewards restraint — a skeleton is a set of slots available, not a
+# set of slots to fill.
+
+default:
+  name: Full rig
+  slots:
+    - sub
+    - bass-pulse
+    - pad-drone
+    - lead
+    - counter-arp
+    - perc
+    - fx-risers
+    - sample-vox
+
+sparse:
+  name: Sub and room
+  slots:
+    - sub
+    - pad-drone
+    - fx-risers
+
+pulse:
+  name: Carpenter pulse
+  slots:
+    - sub
+    - bass-pulse
+    - lead
+    - perc
