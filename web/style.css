@@ -1,36 +1,38 @@
 :root {
-  --bg: #f4f4f2;
-  --fg: #18181a;
-  --dim: #6b6b70;
-  --card: #ffffff;
-  --line: #dcdcd8;
-  --accent: #e8851c;
-  --bad: #c0392b;
-  --good: #2e8b57;
-  --body: #3a3d42;
-  --tray: #26282c;
-  --knob: #1f2124;
-  --btn: #2e3135;
-  --label: #e8e8ea;
-  --key-w: #d9dadc;
-  --key-b: #c9cacd;
-  --lit: #ffb347;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #121214;
-    --fg: #ececee;
-    --dim: #8d8d94;
-    --card: #1c1c1f;
-    --line: #2e2e33;
-  }
+  /* DIRGE: a dead channel in a dark room. Blood on black, phosphor and static */
+  color-scheme: dark;
+  --bg: #070506;
+  --fg: #ece2e2;
+  --dim: #8c7c7f;
+  --card: rgba(16, 10, 12, 0.88);
+  --line: #2c1a1e;
+  --accent: #d11a2a;
+  --bad: #ff4d5e;
+  --good: #63d39a;
+  --blood: #b3121f;
+  --blood-hi: #ff3341;
+  --blood-lo: #3d0408;
+  --scope-grid: rgba(179, 18, 31, 0.16);
+  --body: #141012;
+  --tray: #0a0809;
+  --knob: #1c1719;
+  --btn: #221c1e;
+  --label: #cfc3c5;
+  --key-w: #2d2628;
+  --key-b: #1c1719;
+  --lit: #ff2a3a;
 }
 * {
   box-sizing: border-box;
 }
+html {
+  background: var(--bg);
+}
 body {
   margin: 0;
-  background: var(--bg);
+  min-height: 100vh;
+  position: relative;
+  background: radial-gradient(ellipse 80% 70% at 50% 35%, #1a0a0d 0%, var(--bg) 70%) fixed;
   color: var(--fg);
   font:
     15px/1.55 system-ui,
@@ -60,7 +62,9 @@ kbd {
   font-size: 12px;
 }
 
-header {
+header.bar {
+  position: relative;
+  z-index: 3;
   display: flex;
   align-items: center;
   gap: 24px;
@@ -157,7 +161,7 @@ select {
 button.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #1a1206;
+  color: #fff;
   font-weight: 600;
 }
 button:disabled {
@@ -203,7 +207,11 @@ pre {
   position: relative;
   width: 100%;
   aspect-ratio: 1000 / 640;
-  background: var(--body);
+  background: linear-gradient(180deg, #1a1416, var(--body) 40%);
+  box-shadow:
+    0 0 0 1px #2c1a1e,
+    0 30px 80px -20px rgba(179, 18, 31, 0.35),
+    0 0 120px -40px rgba(255, 51, 65, 0.4);
   border-radius: 4.4% / 6.9%;
   user-select: none;
   -webkit-user-select: none;
@@ -218,7 +226,8 @@ pre {
   border-radius: 14px;
 }
 .bezel {
-  background: #111214;
+  background: #050304;
+  box-shadow: 0 0 2.4cqw -0.4cqw rgba(255, 51, 65, 0.35);
   border-radius: 11%;
 }
 #screen {
@@ -278,7 +287,7 @@ pre {
   box-shadow: inset 0 0 0 2px var(--accent);
 }
 .btn.lit {
-  color: #1a1206;
+  color: #fff;
   background: var(--lit);
   box-shadow: 0 0 1.4cqw var(--lit);
 }
@@ -291,7 +300,7 @@ pre {
   align-items: flex-end;
   justify-content: center;
   padding-bottom: 0.8cqw;
-  color: #55575c;
+  color: #8c7c7f;
   font-size: 1.3cqw;
   font-weight: 600;
   line-height: 1.1;
@@ -361,4 +370,243 @@ pre {
 }
 .console .err {
   color: var(--bad);
+}
+
+/* ================================================================ DIRGE's room around the FM-1 */
+main,
+footer,
+.crest,
+.buildlog {
+  position: relative;
+  z-index: 2;
+}
+/* static over everything (a still noise tile, shaken in steps) and the CRT's scanlines */
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+body::before {
+  inset: -50%;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.6 -.3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: static 0.5s steps(6) infinite;
+}
+body::after {
+  z-index: 1; /* behind the panel: over it, the lines would eat rows of the FM-1's small font */
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px);
+  mix-blend-mode: multiply;
+}
+@keyframes static {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-7%, 4%); }
+  40% { transform: translate(5%, -9%); }
+  60% { transform: translate(-3%, 8%); }
+  80% { transform: translate(9%, 2%); }
+  100% { transform: translate(-5%, -4%); }
+}
+/* the horizon: a grid sinking into the dark under everything */
+.horizon {
+  position: fixed;
+  left: -50%;
+  right: -50%;
+  bottom: 0;
+  height: 55vh;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, rgba(179, 18, 31, 0.35) 0 1px, transparent 1px 80px),
+    repeating-linear-gradient(0deg, rgba(179, 18, 31, 0.35) 0 1px, transparent 1px 80px);
+  transform: perspective(300px) rotateX(62deg);
+  transform-origin: 50% 100%;
+  -webkit-mask-image: linear-gradient(to top, #000 0%, transparent 85%);
+  mask-image: linear-gradient(to top, #000 0%, transparent 85%);
+  animation: sink 4s linear infinite;
+}
+@keyframes sink {
+  to { background-position: 0 80px, 0 80px; }
+}
+
+/* the crest: the name in the FM-1's own pixels, bleeding */
+.crest {
+  text-align: center;
+  padding: 28px 16px 8px;
+}
+.glitch {
+  display: inline-block;
+  animation: glitch 7s steps(1) infinite;
+}
+.logo {
+  display: block;
+  width: min(520px, 86vw);
+  height: auto;
+  overflow: visible;
+  filter: drop-shadow(-3px 0 rgba(0, 230, 255, 0.28)) drop-shadow(3px 0 rgba(255, 30, 50, 0.45)) drop-shadow(0 0 24px rgba(179, 18, 31, 0.55));
+}
+.drip {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  animation: drip 9s ease-in infinite;
+  animation-delay: calc(var(--d) * -1.7s);
+}
+@keyframes drip {
+  0% { transform: scaleY(0.15); opacity: 1; }
+  75% { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(1.08); opacity: 0; }
+}
+@keyframes glitch {
+  0%, 91%, 100% { transform: none; clip-path: none; }
+  92% { transform: translate(-6px, 1px) skewX(-8deg); clip-path: inset(10% 0 55% 0); }
+  93% { transform: translate(5px, -1px); clip-path: inset(48% 0 12% 0); }
+  94% { transform: translate(-2px, 0); clip-path: inset(70% 0 4% 0); }
+  95% { transform: none; clip-path: none; }
+}
+.tagline {
+  margin: 14px 0 18px;
+  font: 600 15px/1.4 ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--fg);
+  text-shadow: 0 0 12px rgba(255, 51, 65, 0.5);
+}
+.tagline .dim {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-shadow: none;
+}
+.calls {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.slab {
+  display: inline-block;
+  padding: 12px 26px;
+  font: 700 14px/1 ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: #fff;
+  background: var(--accent);
+  box-shadow:
+    inset 0 -4px 0 rgba(0, 0, 0, 0.35),
+    inset 0 3px 0 rgba(255, 255, 255, 0.18),
+    0 0 0 2px #000,
+    0 0 28px rgba(209, 26, 42, 0.45);
+  transition: box-shadow 0.15s, transform 0.05s;
+}
+.slab:hover {
+  box-shadow:
+    inset 0 -4px 0 rgba(0, 0, 0, 0.35),
+    inset 0 3px 0 rgba(255, 255, 255, 0.18),
+    0 0 0 2px #000,
+    0 0 40px rgba(255, 51, 65, 0.7);
+}
+.slab:active {
+  transform: translateY(2px);
+}
+.slab.ghost {
+  color: var(--fg);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line), 0 0 0 2px #000;
+}
+
+/* the oscilloscope over the panel (scope.js) */
+.scope-wrap {
+  position: relative;
+  height: 96px;
+  margin: 4px 0 16px;
+  background: #050304;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.9), 0 0 30px -10px rgba(179, 18, 31, 0.4);
+}
+.scope-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.35) 0 1px, transparent 1px 3px);
+}
+#scope {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.scope-tag {
+  position: absolute;
+  top: 6px;
+  left: 10px;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--blood-hi);
+  opacity: 0.7;
+}
+
+/* the panel's labels for what DIRGE's knobs do */
+.label.does {
+  color: var(--blood-hi);
+  font-size: 1.3cqw;
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 1cqw rgba(255, 51, 65, 0.6);
+}
+
+/* header, cards and nav in the room's colours */
+header.bar {
+  border-bottom-color: var(--line);
+  background: rgba(7, 5, 6, 0.7);
+  backdrop-filter: blur(6px);
+}
+.brand strong {
+  color: var(--blood-hi);
+  letter-spacing: 0.24em;
+}
+nav a.on {
+  color: var(--fg);
+  background: rgba(179, 18, 31, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(209, 26, 42, 0.55);
+}
+.card,
+.console {
+  backdrop-filter: blur(4px);
+}
+.card {
+  border-left: 3px solid var(--blood);
+}
+h1 {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+a:hover {
+  color: var(--blood-hi);
+}
+::selection {
+  background: var(--blood);
+  color: #fff;
+}
+
+@media (max-width: 600px) {
+  .tagline {
+    font-size: 12px;
+    letter-spacing: 0.2em;
+  }
+  .scope-wrap {
+    height: 72px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  body::before,
+  .horizon,
+  .glitch,
+  .drip {
+    animation: none;
+  }
 }

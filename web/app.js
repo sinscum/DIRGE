@@ -2,6 +2,7 @@
 // The page: the emulator (firmware.wasm in worklet.js), the installer and the rescue (fm1ota.js).
 import { productOf, logicalImage } from './fm1pkg.js'
 import { Updater } from './fm1ota.js'
+import { attachScope } from './scope.js'
 
 const $ = (id) => document.getElementById(id)
 const DEV = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)
@@ -95,6 +96,9 @@ knob(215, 100, 24, 'SELECT', ENC.SELECT)
 knob(105, 205, 24, 'PRESETS', ENC.PRESETS)
 knob(215, 205, 24, 'ALGORITHM', ENC.ALGORITHM)
 for (let i = 0; i < 4; i++) knob(610 + i * 104, 100, 22, `KNOB${i + 1}`, ENC[`KNOB${i + 1}`])
+// DIRGE: what each knob does in this firmware, under it
+const KNOB_DOES = ['DETUNE', 'TONE', 'SUB', 'DRIFT']
+KNOB_DOES.forEach((s, i) => add('label does', 610 + i * 104 - 60, 128, 120, 20, s))
 
 const buttons = []
 function button(x, y, w, h, label) {
@@ -366,6 +370,7 @@ $('power').addEventListener('click', async () => {
     await audioCtx.audioWorklet.addModule('worklet.js')
     node = new AudioWorkletNode(audioCtx, 'fm1', { numberOfInputs: 0, outputChannelCount: [2] })
     node.connect(audioCtx.destination)
+    attachScope(audioCtx, node)
     node.port.onmessage = (e) => {
       const m = e.data
       if (m.type === 'frame') onFrame(m)

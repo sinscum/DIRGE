@@ -4,11 +4,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>FM-1 firmware</title>
+    <title>DIRGE firmware</title>
+    <meta name="description" content="DIRGE: darksynth, noise and drone firmware for the M-VAVE FM-1. Play it in the browser." />
+    <meta name="theme-color" content="#070506" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <header>
+    <div class="horizon" aria-hidden="true"></div>
+    <header class="bar">
       <div class="brand">
         <strong id="fwname">FM-1</strong>
         <span id="fwver" class="dim"></span>
@@ -32,9 +35,22 @@
       <pre id="buildlog-text"></pre>
     </section>
 
+    <section class="crest">
+      <div class="glitch"><svg class="logo" viewBox="-0.5 -0.5 30 13.5" role="img" aria-label="DIRGE" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="blood" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="12"><stop offset="0" stop-color="var(--blood-hi)"/><stop offset=".55" stop-color="var(--blood)"/><stop offset="1" stop-color="var(--blood-lo)"/></linearGradient></defs><g fill="url(#blood)" shape-rendering="crispEdges"><rect x="0" y="0" width="1.06" height="1.06"/><rect x="1" y="0" width="1.06" height="1.06"/><rect x="2" y="0" width="1.06" height="1.06"/><rect x="3" y="0" width="1.06" height="1.06"/><rect x="0" y="1" width="1.06" height="1.06"/><rect x="4" y="1" width="1.06" height="1.06"/><rect x="0" y="2" width="1.06" height="1.06"/><rect x="4" y="2" width="1.06" height="1.06"/><rect x="0" y="3" width="1.06" height="1.06"/><rect x="4" y="3" width="1.06" height="1.06"/><rect x="0" y="4" width="1.06" height="1.06"/><rect x="4" y="4" width="1.06" height="1.06"/><rect x="0" y="5" width="1.06" height="1.06"/><rect x="4" y="5" width="1.06" height="1.06"/><rect x="0" y="6" width="1.06" height="1.06"/><rect x="1" y="6" width="1.06" height="1.06"/><rect x="2" y="6" width="1.06" height="1.06"/><rect x="3" y="6" width="1.06" height="1.06"/><rect x="6" y="0" width="1.06" height="1.06"/><rect x="7" y="0" width="1.06" height="1.06"/><rect x="8" y="0" width="1.06" height="1.06"/><rect x="9" y="0" width="1.06" height="1.06"/><rect x="10" y="0" width="1.06" height="1.06"/><rect x="8" y="1" width="1.06" height="1.06"/><rect x="8" y="2" width="1.06" height="1.06"/><rect x="8" y="3" width="1.06" height="1.06"/><rect x="8" y="4" width="1.06" height="1.06"/><rect x="8" y="5" width="1.06" height="1.06"/><rect x="6" y="6" width="1.06" height="1.06"/><rect x="7" y="6" width="1.06" height="1.06"/><rect x="8" y="6" width="1.06" height="1.06"/><rect x="9" y="6" width="1.06" height="1.06"/><rect x="10" y="6" width="1.06" height="1.06"/><rect x="12" y="0" width="1.06" height="1.06"/><rect x="13" y="0" width="1.06" height="1.06"/><rect x="14" y="0" width="1.06" height="1.06"/><rect x="15" y="0" width="1.06" height="1.06"/><rect x="12" y="1" width="1.06" height="1.06"/><rect x="16" y="1" width="1.06" height="1.06"/><rect x="12" y="2" width="1.06" height="1.06"/><rect x="16" y="2" width="1.06" height="1.06"/><rect x="12" y="3" width="1.06" height="1.06"/><rect x="13" y="3" width="1.06" height="1.06"/><rect x="14" y="3" width="1.06" height="1.06"/><rect x="15" y="3" width="1.06" height="1.06"/><rect x="12" y="4" width="1.06" height="1.06"/><rect x="14" y="4" width="1.06" height="1.06"/><rect x="12" y="5" width="1.06" height="1.06"/><rect x="15" y="5" width="1.06" height="1.06"/><rect x="12" y="6" width="1.06" height="1.06"/><rect x="16" y="6" width="1.06" height="1.06"/><rect x="19" y="0" width="1.06" height="1.06"/><rect x="20" y="0" width="1.06" height="1.06"/><rect x="21" y="0" width="1.06" height="1.06"/><rect x="22" y="0" width="1.06" height="1.06"/><rect x="18" y="1" width="1.06" height="1.06"/><rect x="18" y="2" width="1.06" height="1.06"/><rect x="18" y="3" width="1.06" height="1.06"/><rect x="21" y="3" width="1.06" height="1.06"/><rect x="22" y="3" width="1.06" height="1.06"/><rect x="18" y="4" width="1.06" height="1.06"/><rect x="22" y="4" width="1.06" height="1.06"/><rect x="18" y="5" width="1.06" height="1.06"/><rect x="22" y="5" width="1.06" height="1.06"/><rect x="19" y="6" width="1.06" height="1.06"/><rect x="20" y="6" width="1.06" height="1.06"/><rect x="21" y="6" width="1.06" height="1.06"/><rect x="22" y="6" width="1.06" height="1.06"/><rect x="24" y="0" width="1.06" height="1.06"/><rect x="25" y="0" width="1.06" height="1.06"/><rect x="26" y="0" width="1.06" height="1.06"/><rect x="27" y="0" width="1.06" height="1.06"/><rect x="28" y="0" width="1.06" height="1.06"/><rect x="24" y="1" width="1.06" height="1.06"/><rect x="24" y="2" width="1.06" height="1.06"/><rect x="24" y="3" width="1.06" height="1.06"/><rect x="25" y="3" width="1.06" height="1.06"/><rect x="26" y="3" width="1.06" height="1.06"/><rect x="27" y="3" width="1.06" height="1.06"/><rect x="24" y="4" width="1.06" height="1.06"/><rect x="24" y="5" width="1.06" height="1.06"/><rect x="24" y="6" width="1.06" height="1.06"/><rect x="25" y="6" width="1.06" height="1.06"/><rect x="26" y="6" width="1.06" height="1.06"/><rect x="27" y="6" width="1.06" height="1.06"/><rect x="28" y="6" width="1.06" height="1.06"/><rect class="drip" style="--d:0" x="0.3" y="7" width="0.4" height="2"/><rect class="drip" style="--d:1" x="3.3" y="7" width="0.4" height="5"/><rect class="drip" style="--d:2" x="7.3" y="7" width="0.4" height="5"/><rect class="drip" style="--d:3" x="9.3" y="7" width="0.4" height="2"/><rect class="drip" style="--d:4" x="10.3" y="7" width="0.4" height="5"/><rect class="drip" style="--d:0" x="20.3" y="7" width="0.4" height="4"/><rect class="drip" style="--d:1" x="21.3" y="7" width="0.4" height="3"/><rect class="drip" style="--d:2" x="22.3" y="7" width="0.4" height="1"/><rect class="drip" style="--d:3" x="26.3" y="7" width="0.4" height="1"/></g></svg></div>
+      <p class="tagline">darksynth · noise · drone <span class="dim">for the M-VAVE FM-1</span></p>
+      <nav class="calls">
+        <a class="slab" href="#install">Install on your FM-1</a>
+        <a class="slab ghost" href="https://github.com/sinscum/DIRGE" target="_blank" rel="noopener">Source</a>
+      </nav>
+    </section>
+
     <main>
       <!-- ---------------------------------------------------------------- emulator -->
       <section id="tab-emulator" class="tab">
+        <div class="scope-wrap">
+          <canvas id="scope" aria-hidden="true"></canvas>
+          <span class="scope-tag mono">CH1 · OUT</span>
+        </div>
         <div class="device" id="device">
           <canvas id="screen" width="240" height="240"></canvas>
           <div class="poweron" id="poweron"><button id="power" class="primary">Switch on</button></div>
@@ -128,7 +144,7 @@
       </section>
     </main>
 
-    <footer class="dim small">Built on <a href="https://github.com/hugelton/Felucca">Felucca</a> (Leo Kuroshita, Hügelton Instruments), <a href="https://github.com/isod89/sloop-fm1">SLOOP</a> and <a href="https://github.com/zvenson/dinghy">Dinghy</a>. GPL-3.0, no warranty. M-VAVE and FM-1 are trademarks of their owners.</footer>
+    <footer class="dim small">DIRGE is made with <a href="https://github.com/konsumer/foma">foma</a> (konsumer), built on <a href="https://github.com/hugelton/Felucca">Felucca</a> (Leo Kuroshita, Hügelton Instruments), <a href="https://github.com/isod89/sloop-fm1">SLOOP</a> and <a href="https://github.com/zvenson/dinghy">Dinghy</a>. GPL-3.0, no warranty. M-VAVE and FM-1 are trademarks of their owners.</footer>
     <script type="module" src="app.js"></script>
   </body>
 </html>
