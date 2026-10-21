@@ -13,7 +13,7 @@ The USB audio from a computer in `platform/src/usb.c` (`FOMA_USB_AUDIO`) is port
 it be used under GPL-3.0; foma's version uses integer math. The TRS MIDI input (`platform/src/midi_uart.c`,
 `platform/hal/fm1_uart.h`) is Felucca's.
 
-DIRGE: `src/`, `firmware.json`, and its changes to the rest, by its authors, on [foma](https://github.com/konsumer/foma).
+DIRGE: `src/`, `tests/`, `firmware.json`, and its changes to the rest, by its authors, on [foma](https://github.com/konsumer/foma).
 
 ## Third-party material
 
@@ -22,5 +22,6 @@ DIRGE: `src/`, `firmware.json`, and its changes to the rest, by its authors, on 
 | Terminus font (ter-u16n), rendered into `platform/gen/felucca_font.h`                     | SIL OFL 1.1 | `platform/gen/Terminus-LICENSE.txt`             |
 | `platform/sdk/uboot.boot`, `cfg_tool.bin`, `eq_cfg_hw.bin` from JieLi's AC79NN_SDK_V1.2.1 | Apache-2.0  | <https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK> |
 | JieLi's toolchain, downloaded into the Docker image                                       | JieLi's     | <https://pkgman.jieliapp.com/s/linux-toolchain> |
+| Felucca-Engines (Leo Kuroshita, Hügelton Instruments), unchanged in `lib/felucca-engines/`; `src/dsp/fe_tables.h` is made by its `tools/gen_engine_tables.py`; `src/dsp/noise.h` follows its `eng_noise.c` | MIT | `lib/felucca-engines/LICENSE`, <https://github.com/hugelton/Felucca-Engines> |
 
 "M-VAVE" and "FM-1" belong to their owners; "Felucca" and "Hügelton Instruments" to Hügelton Instruments. This project is not made or endorsed by them.
