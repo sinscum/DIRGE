@@ -1,0 +1,15 @@
+# DIRGE's DSP golden renders (tests/dirge/run.sh): name, FNV-1a 64 of the 16-bit output.
+# Rewritten by UPDATE=1 sh tests/dirge/run.sh -- only for an intended change of the sound.
+osc/saw-sweep 8a246f096ccff987
+osc/pulse-pwm e60428cf6e988632
+osc/tri c7d59101cd6026ee
+osc/sine 03b676bc0ef032ea
+filter/svf-sweep c3bd8c2ba839e089
+filter/svf-low-dc 52dd209c5f3bb865
+shape/softclip-drive a402e186cdf00e74
+noise/white 24b1902dc353a7fc
+noise/pink 6a26bfe913291b10
+noise/brown baa91030529fe7ce
+noise/crackle a2ce7b2eed5bc138
+noise/lfsr-23 64fd4ae8bb178b55
+noise/lfsr-7 9f8de29f6e4fb3b8

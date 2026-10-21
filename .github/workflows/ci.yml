@@ -1,0 +1,72 @@
+# DIRGE: on every push and pull request, the firmware built, every host test run (Felucca's suite, DIRGE's DSP
+# tests among them: tests/run_tests.sh), the browser emulator built; on main, the site published to GitHub Pages:
+# the emulator at the root, the installer and the editor under webapp/, the package under firmware/.
+# The JieLi toolchain comes from foma's image (konsumer/foma-toolchain, /opt/jieli/toolchain), the three SDK files
+# from sdk/ac79, Emscripten from its own image.
+name: ci
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      AC79_SDK: ${{ github.workspace }}/sdk/ac79
+      JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Python packages (Pillow with libraqm for the UI fonts, fontTools)
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq libraqm0
+          python3 -m pip install --user --break-system-packages Pillow fonttools
+          python3 -c "from PIL import features; assert features.check('raqm'), 'Pillow without raqm'"
+      - name: JieLi toolchain (from foma's image)
+        run: |
+          id=$(docker create --platform linux/amd64 konsumer/foma-toolchain)
+          mkdir -p "$(dirname "$JIELI_TOOLCHAIN")"
+          docker cp -L "$id:/opt/jieli/toolchain" "$JIELI_TOOLCHAIN"
+          docker rm "$id"
+      - name: Firmware
+        run: ./build.sh
+      - name: Host tests
+        run: sh tests/run_tests.sh
+      - name: Browser emulator
+        run: docker run --rm -v "$PWD:/src" -w /src -u "$(id -u):$(id -g)" emscripten/emsdk:3.1.74 sh web/emu/build.sh
+      - name: Site
+        run: |
+          v=$(sed -n 's/^#define FELUCCA_VERSION "v\([^"]*\)".*/\1/p' firmware/src/felucca.c)
+          python3 web/make_site.py build/felucca.fwsc "$v" site
+          cp -r build/emu/. site/
+          cp build/felucca.fwsc "dirge-$v-${GITHUB_SHA::7}.fwsc"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware
+          path: dirge-*.fwsc
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        with:
+          path: site
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
