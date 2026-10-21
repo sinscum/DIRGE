@@ -30,6 +30,13 @@ Felucca (hugelton) → SLOOP → Dinghy (zvenson) → **foma** (konsumer, Docker
 - Draw only what changed (a full screen send takes ~80 ms). Save settings only while silent.
 - Recovery: hold OCT− at power-on for USB rescue. Back up the full flash (M-Flasher or MvaveFM1Unbricker) before the first install.
 
+## Layout and tests
+
+- `src/main.c`: the firmware. `src/dsp/dsp.h`: the DSP library (Felucca-Engines' `dsp.c`, vendored unchanged in `lib/felucca-engines/`, plus DIRGE's own modules such as `noise.h`). Only `.c` files under `src/` are compiled, so libraries live in `lib/` and are included as one translation unit.
+- `sh tests/run.sh` runs everything on the host without Docker: the vendored engines' own goldens, a table drift check, then the DSP blocks (`tests/dsp_test.c`) and the firmware in a scripted pretend FM-1 (`tests/fm1_host.c`) under ASan/UBSan, with health checks and golden hashes in `tests/golden.txt`. WAVs land in `build/tests/`. CI runs it on every push.
+- A golden hash change is only fine when the sound was meant to change: then `UPDATE=1 sh tests/run.sh` and say so in the commit.
+- Work goes straight to `main` (no feature branches or PRs).
+
 ## Roadmap
 
 0. **Play first.** Try the GHOULBOX and GR!MM browser demos and Jangada. Write down what is missing.

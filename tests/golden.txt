@@ -13,6 +13,6 @@ noise/brown baa91030529fe7ce
 noise/crackle a2ce7b2eed5bc138
 noise/lfsr-23 64fd4ae8bb178b55
 noise/lfsr-7 9f8de29f6e4fb3b8
-drone/default 7887c2169469860d
-drone/everything-up 747160cf55a4a4f0
-drone/dark-and-still c2776cd3b48e3b90
+drone/default 5862420fe94b42b1
+drone/everything-up ebfb720f671dc4af
+drone/dark-and-still e2127607f33f75aa

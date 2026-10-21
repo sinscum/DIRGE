@@ -12,7 +12,7 @@ Try it in the browser, and install it on the FM-1 from Chrome or Edge: <https://
 | PLAY          | start / stop the drone on the last root                            |
 | OCT- / OCT+   | octave                                                             |
 | KNOB1 DETUNE  | 0..25 cents between the four saws                                  |
-| KNOB2 TONE    | one-pole lowpass, dark to open                                     |
+| KNOB2 TONE    | resonant low-pass, ~220 Hz to open                                 |
 | KNOB3 SUB     | sine an octave under the root                                      |
 | KNOB4 DRIFT   | slow random pitch wander per saw                                   |
 
@@ -26,6 +26,9 @@ Only Docker is needed:
 ./fm1 dev          # http://localhost:8000: the emulator, the installer, the rescue; rebuilds when you save
 ./fm1 build        # build/dirge-VERSION.fwsc
 ```
+
+`sh tests/run.sh` renders the DSP library and the firmware on your computer (a C compiler and Python 3, no Docker),
+checks them and compares them with `tests/golden.txt`; the WAVs land in `build/tests/`.
 
 The firmware is in `src/`; what it can call is in [platform/fm1.h](platform/fm1.h). Name, version and package
 identity: [firmware.json](firmware.json). The rules of the chip (no floats, keep `audio()` short, ...) are in

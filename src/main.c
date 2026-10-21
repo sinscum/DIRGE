@@ -1,20 +1,22 @@
-/* DIRGE, step 1: a fixed-point detuned drone.
+/* DIRGE: a fixed-point detuned drone, on DIRGE's DSP library (src/dsp/dsp.h).
  *
  *   keys        set the drone's root and start it; the same key again fades it out
  *   PLAY        starts / stops the drone on the last root
  *   OCT- OCT+   the octave (kept in flash, with the knobs)
  *   KNOB1       DETUNE  0..25 cents between the saws
- *   KNOB2       TONE    a one-pole lowpass, dark to open
+ *   KNOB2       TONE    a resonant low-pass, ~220 Hz to open
  *   KNOB3       SUB     a sine an octave under the root
  *   KNOB4       DRIFT   slow random wander of each saw's pitch
  *
  * Four saws: two at the root and two an octave down, pushed apart by DETUNE and pulled
  * around by DRIFT, the pairs panned left and right. A sine sub under them, a lowpass over
- * them, a slow fade in and out. The saws are naive (no band-limiting) for now: PolyBLEP
- * comes with the DSP library.
+ * them, a slow fade in and out. The saws are band-limited (polyBLEP): no aliasing whine on
+ * high notes.
  *
  * What you can call: platform/fm1.h. The rules (no float, keep audio() short): CLAUDE.md. */
 #include "fm1.h"
+
+#include "dsp/dsp.h"
 
 #define SAWS 4
 #define CENTS_Q24 9691 /* one cent as a ratio above 1, Q24: ln(2) / 1200 * 2^24 */
@@ -24,13 +26,13 @@
 /* ---- written by loop(), read by audio() */
 static volatile uint32_t saw_inc[SAWS]; /* phase steps, detuned and drifted */
 static volatile uint32_t sub_inc;
-static volatile int32_t tone_k;  /* lowpass coefficient, Q15 */
+static volatile int32_t tone_cut; /* the low-pass's cutoff, 0..127 << 8 (dsp.h tsvf_coef) */
 static volatile int32_t sub_lvl; /* Q15 */
 static volatile int32_t gate;    /* target level, Q23: 0 = fading out */
 
 /* ---- audio() only */
 static uint32_t saw_ph[SAWS], sub_ph;
-static int32_t lp_l, lp_r;   /* the lowpass state */
+static int32_t lp[4];        /* the low-passes' state: left, right */
 static volatile int32_t amp; /* the level now, Q23; written by audio(), read by loop() */
 
 static struct {
@@ -40,18 +42,17 @@ static struct {
 
 static int root = KEY_FIRST_NOTE; /* the drone's MIDI note */
 
-/* ---- the sound: runs in the audio interrupt. Keep it short: no screen, no flash */
-static int32_t lowpass(int32_t *y, int32_t x, int32_t k) {
-  *y += (int32_t)(((int64_t)(x - *y) * k) >> 15);
-  return *y;
-}
+#define RESONANCE 24 /* 0..127: a little, so TONE's sweeps speak */
 
+/* ---- the sound: runs in the audio interrupt. Keep it short: no screen, no flash */
 void audio(int32_t *out, uint32_t frames) {
-  int32_t a = amp, g = gate, k = tone_k, sl = sub_lvl;
+  int32_t a = amp, g = gate, sl = sub_lvl;
   uint32_t inc[SAWS], si = sub_inc;
+  tsvf_t flt;
   if (!a && !g) {
     return;
   }
+  tsvf_coef(&flt, tone_cut, RESONANCE); /* once a block */
   for (int s = 0; s < SAWS; s++) {
     inc[s] = saw_inc[s];
   }
@@ -63,16 +64,16 @@ void audio(int32_t *out, uint32_t frames) {
     }
     int32_t saw[SAWS];
     for (int s = 0; s < SAWS; s++) {
+      saw[s] = osc_saw(saw_ph[s], inc[s]) >> 1; /* +-16384 */
       saw_ph[s] += inc[s];
-      saw[s] = (int32_t)saw_ph[s] >> 17; /* +-16384 */
     }
     sub_ph += si;
-    int32_t sub = (sine(sub_ph) * sl) >> 17; /* +-8192 at full SUB */
+    int32_t sub = (sine_i(sub_ph) * sl) >> 17; /* +-8192 at full SUB */
     /* saws 0 and 2 lean left, 1 and 3 right: +-49152, then a quarter: headroom for what comes after */
     int32_t l = saw[0] + saw[2] + ((saw[1] + saw[3]) >> 1);
     int32_t r = saw[1] + saw[3] + ((saw[0] + saw[2]) >> 1);
-    l = lowpass(&lp_l, (l >> 2) + sub, k);
-    r = lowpass(&lp_r, (r >> 2) + sub, k);
+    l = tsvf_lp_r(&flt, (l >> 2) + sub, &lp[0], &lp[1]);
+    r = tsvf_lp_r(&flt, (r >> 2) + sub, &lp[2], &lp[3]);
     int32_t lvl = a >> 8; /* Q15 */
     out[2 * i] += (l * lvl) >> 15;
     out[2 * i + 1] += (r * lvl) >> 15;
@@ -108,8 +109,7 @@ static void update_sound(void) {
     saw_inc[s] = detuned(base, SPREAD[s] * detune + d * wander / 256);
   }
   sub_inc = note_inc(root - 12);
-  int32_t t = saved.knob[1];
-  tone_k = 600 + t * t * 2 > 32767 ? 32767 : 600 + t * t * 2; /* ~130 Hz .. open */
+  tone_cut = (40 << 8) + saved.knob[1] * (87 << 8) / 127; /* ~220 Hz .. 16 kHz */
   sub_lvl = saved.knob[2] * 32767 / 127;
 }
 

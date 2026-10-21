@@ -11,6 +11,7 @@ the app, the update loader, the checks that keep a build from bricking the FM-1,
 """
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -369,6 +370,14 @@ def build_site():
   for f in WEB.iterdir():
     if f.is_file():
       shutil.copy(f, SITE / f.name)
+  # DIRGE: the page's own files named with a hash of them (style.css?v=...), so a browser fetches them again
+  # after a deploy instead of showing its cached copy for up to 10 minutes (GitHub Pages' max-age)
+  v = hashlib.sha1(b"".join(f.read_bytes() for f in sorted(WEB.iterdir()) if f.is_file())).hexdigest()[:10]
+  stamp = lambda m: f"{m[1]}{m[2]}?v={v}{m[3]}"  # noqa: E731
+  for name, pat in [("index.html", r"""((?:href|src)=")([\w.-]+\.(?:css|js))(")"""),
+                    ("app.js", r"""((?:from |addModule\()')(\.?/?[\w.-]+\.js)(')""")]:
+    p = SITE / name
+    p.write_text(re.sub(pat, stamp, p.read_text()))
 
 
 def build():
