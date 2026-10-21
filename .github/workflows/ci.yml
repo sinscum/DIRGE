@@ -50,7 +50,8 @@ jobs:
       - name: Host tests
         run: |
           sh tests/run_tests.sh > build/tests.log 2>&1 && { tail -3 build/tests.log; exit 0; }
-          echo "::group::the failing lines"; grep -nE " FAIL$|FAILED|error:|differ|changed" build/tests.log | grep -v " ok$" | head -80
+          echo "::group::the failing lines"
+          grep -niE "fail|error|sanitizer|abort|segmentation|timeout|not ok|^== " build/tests.log | grep -viE " ok$|fails? (at once|the capture)|failure keeps|save error|failed-save|_fail" | head -150
           echo "::endgroup::"; tail -40 build/tests.log; exit 1
       - uses: actions/upload-artifact@v4
         if: always()
