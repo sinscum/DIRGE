@@ -199,7 +199,8 @@ OUT=build/host
 mkdir -p "$OUT"
 CC="${CC:-cc} -O1 -Wall -Wno-unused-function"
 fail=0
-run() { echo "== $1"; shift; "$@" || fail=1; }
+# (DIRGE: a failing run names itself, so a test that fails without printing FAIL is found in the log)
+run() { name=$1; echo "== $1"; shift; if "$@"; then :; else echo "FAILED: $name (exit $?)"; fail=1; fi; }
 
 $CC -o "$OUT/storage_test" tests/storage_test.c
 run "flash storage (A/B, torn writes)" "$OUT/storage_test"
