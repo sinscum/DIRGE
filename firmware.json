@@ -1,0 +1,10 @@
+{
+  "name": "DIRGE",
+  "version": "0.1",
+  "identity": "FM-1_66",
+  "options": {
+    "usb_audio": true,
+    "trs_midi": true,
+    "midi_clock": true
+  }
+}
