@@ -41,8 +41,12 @@ _Static_assert(sizeof SCALE_MASK / sizeof SCALE_MASK[0] == 19u, "a mask per SCL 
 static uint32_t kb_prev;
 static volatile uint8_t kb_boot_hold;    /* #137: set from power-on to the end of the splash (main.c): the keys sound nothing,
                                           * and one held across its end stays silent until it is let go and pressed again */
-static uint8_t kb_note[27], kb_trk[27];  /* per key: the note it started and on which track */
+/* DIRGE: MENU > AUDIO > KEYS LAYER: a key plays two tracks, the second in its own slot (k + 27: the key's note, chord
+ * and track there as in slot k; KB_SILENT when it plays one). KB_SLOTS: every per-key array of the keys' notes */
+#define KB_SLOTS 54u
+static uint8_t kb_note[KB_SLOTS], kb_trk[KB_SLOTS];  /* per key (slot): the note it started and on which track */
 static uint8_t in_key;                   /* the key (+ 1) whose notes go into input_on now (key_on), 0: none (MIDI IN) */
+static uint8_t in_slot;                  /* DIRGE: .. and its slot (k, or k + 27 for KEYS LAYER's second track) */
 static uint8_t kb_vel = 100;             /* 1.5.6 (#84): the keys' velocity (MENU > SELECT VEL, ui_input.c sel_play) */
 /* #191: where each track's held[i] came from, so the arp maps it again as it plays (arp_list: TRN, ROOT, SCALE, QNT as
  * they are now). held_key: the key + 1 (bits 0..4) and the octave buttons then + 3 (bits 5..7); 0: not a key's own
@@ -192,7 +196,7 @@ static void arp_add(track_t *t, uint32_t note)
         uint8_t *hk = held_key[trk_index(t)];
         hk[t->nheld] = in_key && song.grid != 1u && kb_engine(t, k) < 0
                            ? (uint8_t)(in_key | (uint32_t)(song.octave + 3) << 5) : 0u;
-        held_dt[trk_index(t)][t->nheld] = (int8_t)(hk[t->nheld] ? (int32_t)note - kb_note[k] : 0);
+        held_dt[trk_index(t)][t->nheld] = (int8_t)(hk[t->nheld] ? (int32_t)note - kb_note[in_slot] : 0);   /* (DIRGE: the slot's) */
         t->held[t->nheld++] = (uint8_t)note;
     }
     if (t->nheld == 1u) {
@@ -716,7 +720,8 @@ static void key_on(uint32_t k, track_t *t)
 {
     uint32_t n = chord_build(t, kb_note[k], kb_chord[k]), i, mc = trk_midi_ch(trk_index(t)), vel = kb_vel;
     kb_chn[k] = 0;
-    in_key = (uint8_t)(k + 1u);                     /* (the arp keeps the key: arp_add) */
+    in_key = (uint8_t)(k % 27u + 1u);               /* (the arp keeps the key: arp_add) */
+    in_slot = (uint8_t)k;                           /* (DIRGE: k a slot, KEYS LAYER's second k + 27) */
     for (i = 0; i < n; i++) {
         uint32_t x = kb_chord[k][i];
         if (midi_local_held(t, x))
@@ -761,6 +766,17 @@ static __attribute__((noinline)) void kb_lat(uint32_t k)
 }
 #endif
 
+/* DIRGE: MENU > AUDIO > KEYS (song.keys: OFF, LAYER T1..T4, SPLIT T1..T4) and SPLIT (song.ksplit, the first key over
+ * the split). The track (+ 1, 0 none) slot s plays besides the selected one: slot k (< 27) SPLIT's, under the split;
+ * slot k + 27 LAYER's second track, the selected one excepted (it plays once) */
+static uint32_t keys_track(uint32_t s)
+{
+    uint32_t m = song.keys, t = (m - 1u) % NTRK;
+    if (s < 27u)
+        return m > KEYS_LAYER_N && m < KEYS_N && s < KSPLIT_KEY() ? t + 1u : 0u;
+    return m && m <= KEYS_LAYER_N && t != song.sel ? t + 1u : 0u;
+}
+
 static void keyboard_block(void)
 {
     uint32_t cur = fm1_in.notes, ch, k;
@@ -773,7 +789,7 @@ static void keyboard_block(void)
     if (kb_boot_hold) {                           /* #137: under the splash; their release is silent too */
         for (k = 0; k < 27u; k++)
             if ((ch & cur) >> k & 1u)
-                kb_note[k] = KB_SILENT;
+                kb_note[k] = kb_note[k + 27u] = KB_SILENT;
         kb_prev = cur;
         return;
     }
@@ -785,6 +801,9 @@ static void keyboard_block(void)
             continue;
         if ((cur >> k) & 1u) {                    /* the selected track; the key-up goes to the same one */
             kb_trk[k] = song.sel;
+            kb_note[k + 27u] = KB_SILENT;         /* (DIRGE: KEYS LAYER's second track, below) */
+            if (!song.grid && keys_track(k))      /* DIRGE: KEYS SPLIT, a key under the split on its track (on the */
+                kb_trk[k] = (uint8_t)(keys_track(k) - 1u);   /* keyboard, not the DRUM grid, NAME or SONG) */
             if (kb_asleep) {                      /* (SCREEN OFF: the wake press is swallowed) */
                 kb_note[k] = KB_SILENT;
                 continue;
@@ -802,6 +821,12 @@ static void keyboard_block(void)
                 kb_note[k] = grid_key_note(k);
             else
                 kb_note[k] = (uint8_t)kb_map(&trk[kb_trk[k]], k);
+            if (!song.grid && keys_track(k + 27u)) {   /* DIRGE: KEYS LAYER, the second track (its own mapping) */
+                kb_trk[k + 27u] = (uint8_t)(keys_track(k + 27u) - 1u);
+                kb_note[k + 27u] = (uint8_t)kb_map(&trk[kb_trk[k + 27u]], k);
+                if (kb_note[k + 27u] != KB_SILENT)
+                    key_on(k + 27u, &trk[kb_trk[k + 27u]]);
+            }
             if (kb_note[k] == KB_SILENT)
                 continue;
             key_on(k, &trk[kb_trk[k]]);
@@ -814,6 +839,8 @@ static void keyboard_block(void)
                 perf_key_press(k, 0);
                 continue;
             }
+            if (kb_note[k + 27u] != KB_SILENT)    /* (DIRGE: KEYS LAYER's second track) */
+                key_off(k + 27u, &trk[kb_trk[k + 27u] % NTRK]);
             if (kb_note[k] == KB_SILENT)
                 continue;
             key_off(k, &trk[kb_trk[k] % NTRK]);

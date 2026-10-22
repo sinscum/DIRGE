@@ -15,7 +15,9 @@
  * nothing of theirs is in the settings record (MI_PROJECT: menu_get / menu_put read and write song.g) */
 enum { MI_COLOR, MI_STYLE, MI_LARGE, MI_ANIM, MI_LEDS, MI_SCROFF, MI_SCOPE, MI_HOME, MI_HOLD, MI_ACCEL, MI_LATCH, MI_BPMLOCK, MI_SCLLED,
        MI_PREVIEW, MI_CHADD, MI_SELECT, MI_LOWCUT, MI_USB,
-       MI_CLICK, MI_CLKLVL, MI_COUNTIN, MI_TUNE, MI_MIDIIN, MI_TCH1, MI_TCH2, MI_TCH3, MI_TCH4, MI_MFOLLOW, MI_SCRWAKE, MI_LCLEAR, MI_SERIAL, MI_RESTORE, MI_HELP,
+       MI_CLICK, MI_CLKLVL, MI_COUNTIN, MI_TUNE,
+       MI_KEYS, MI_KSPLIT,                             /* (DIRGE: KEYS LAYER / SPLIT, the project's, AUDIO) */
+       MI_MIDIIN, MI_TCH1, MI_TCH2, MI_TCH3, MI_TCH4, MI_MFOLLOW, MI_SCRWAKE, MI_LCLEAR, MI_SERIAL, MI_RESTORE, MI_HELP,
        MI_SCENE,                                       /* (DIRGE: the power-on scene, SYSTEM) */
 #if FELUCCA_CPU2
        MI_CPU2,                                        /* (not in a FELUCCA_CPU2=0 build: core.h) */
@@ -34,12 +36,13 @@ enum { MI_COLOR, MI_STYLE, MI_LARGE, MI_ANIM, MI_LEDS, MI_SCROFF, MI_SCOPE, MI_H
 #define MI_TEXT(row) 0
 #endif
 static int menu_valued(uint32_t row) { return row < MI_VALUES && row != MI_LCLEAR; }   /* (a row with a value) */
-#define MI_PROJECT(row) ((row) == MI_TUNE || ((row) >= MI_MIDIIN && (row) <= MI_TCH4))   /* the project's values (song.g,
-                                                                                         * song.mch), not settings */
+#define MI_PROJECT(row) ((row) >= MI_TUNE && (row) <= MI_TCH4)   /* the project's values (song.g, song.mch; DIRGE: TUNE
+                                                                * .. T4 CHANNEL with KEYS and SPLIT, song.keys), not settings */
 #define MI_TCH(row) ((row) >= MI_TCH1 && (row) <= MI_TCH4)   /* 1.5.5 (#202): T1..T4 CHANNEL, MIDI IN TRACK's */
 static const char *const MI_NAME[MI_COUNT] = {"COLOR", "STYLE", "LARGE", "ANIM", "LEDS", "SCREEN OFF", "SCOPE", "HOME", "HOLD", "KNOB ACCEL",
                                               "FX LATCH", "BPM LOCK", "SCALE LEDS", "STEP PREVIEW", "CHORD ENTRY", "SELECT",
                                               "SPEAKER EQ", "USB LEVEL", "CLICK", "CLICK LEVEL", "COUNT-IN", "TUNE",
+                                              "KEYS", "SPLIT",
                                               "MIDI IN", "T1 CHANNEL", "T2 CHANNEL", "T3 CHANNEL", "T4 CHANNEL",
                                               "AUTO SELECT", "SCREEN WAKE", "LEARN CLEAR", "USB SERIAL", "RESTORE LAST", "HELP",
                                               "SCENE",
@@ -69,6 +72,7 @@ static const uint8_t MI_TAB[MI_COUNT] = {
     MTAB_AUDIO, MTAB_AUDIO, MTAB_AUDIO, MTAB_AUDIO, MTAB_AUDIO,             /* SPEAKER EQ, USB LEVEL, CLICK, CLICK LEVEL,
                                                                              * COUNT-IN */
     MTAB_AUDIO,                                                             /* TUNE (1.2) */
+    MTAB_AUDIO, MTAB_AUDIO,                                                 /* KEYS, SPLIT (DIRGE: the tab with room) */
     MTAB_MIDI,                                                              /* MIDI IN (1.2) */
     MTAB_MIDI, MTAB_MIDI, MTAB_MIDI, MTAB_MIDI,                             /* T1..T4 CHANNEL (1.5.5) */
     MTAB_MIDI,                                                              /* AUTO SELECT (1.5.5) */
@@ -188,7 +192,7 @@ static uint32_t menu_n(uint32_t row)
     return row == MI_COLOR ? palette_n() : row == MI_LOWCUT || (row >= MI_CLICK && row <= MI_COUNTIN) ? 3u :
            row == MI_HOLD ? 4u : row == MI_LEDS ? LEDS_ROWS : row == MI_SCROFF ? NELEM(SCROFF_N) :
            row == MI_TUNE ? TUNE_N : row == MI_MIDIIN ? NELEM(N_ROUTE) : MI_TCH(row) ? MCH_N : row == MI_ANIM ? 3u : row == MI_HOME ? HV_COUNT :
-           row == MI_SELECT ? SEL_N : row == MI_SCENE ? DS_N : 2u;
+           row == MI_SELECT ? SEL_N : row == MI_SCENE ? DS_N : row == MI_KEYS ? KEYS_N : row == MI_KSPLIT ? 27u : 2u;
 }
 static uint32_t menu_get(uint32_t row)
 {
@@ -210,6 +214,8 @@ static uint32_t menu_get(uint32_t row)
     case MI_TUNE: return (uint32_t)(clamp(song.g[G_TUNE], TUNE_MIN, TUNE_MIN + (int32_t)TUNE_N - 1) - TUNE_MIN);
     case MI_MIDIIN: return (uint32_t)clamp(song.g[G_ROUTE], 0, (int32_t)NELEM(N_ROUTE) - 1);
     case MI_TCH1: case MI_TCH2: case MI_TCH3: case MI_TCH4: return mch_get(row - MI_TCH1);
+    case MI_KEYS: return song.keys < KEYS_N ? song.keys : 0u;
+    case MI_KSPLIT: return KSPLIT_KEY();
     case MI_LEDS:
         while (i + 1u < LEDS_COUNT && LEDS_MENU[i] != settings_leds)
             i++;
@@ -242,6 +248,19 @@ static const char *menu_vname(uint32_t row, uint32_t v)
         if (v >= 16u)
             return v == MCH_OMNI ? "OMNI" : "OFF";
         fmt_int(b, (int32_t)v + 1);
+        return b;
+    }
+    case MI_KEYS: {                                    /* DIRGE: OFF, LAYER T1..T4, SPLIT T1..T4 */
+        static char b[10];
+        if (!v || v >= KEYS_N)
+            return "OFF";
+        str_cpy(b, v <= KEYS_LAYER_N ? "LAYER T1" : "SPLIT T1", sizeof b);
+        b[7] = (char)('1' + (v - 1u) % NTRK);
+        return b;
+    }
+    case MI_KSPLIT: {                                  /* DIRGE: the first key over the split, at OCT 0: F3 .. G5 */
+        static char b[6];
+        note_name(b, 53u + v % 27u);
         return b;
     }
     case MI_TUNE: {                                    /* the cents, signed ("+12", "0", "-7"; the menu adds "ct") */
@@ -305,6 +324,8 @@ static void menu_put(uint32_t row, uint32_t v)
     case MI_SCENE: ui_scene = (uint8_t)v; break;      /* (DIRGE: played at the next power-on, main.c felucca_init) */
     case MI_TUNE: song.g[G_TUNE] = (int16_t)((int32_t)v + TUNE_MIN); break;
     case MI_MIDIIN: song.g[G_ROUTE] = (int16_t)v; break;
+    case MI_KEYS: song.keys = (uint8_t)v; break;      /* (DIRGE: from the next key pressed, seq.c keys_track) */
+    case MI_KSPLIT: song.ksplit = (uint8_t)((v + 27u - KSPLIT_C4) % 27u); break;
     case MI_TCH1: case MI_TCH2: case MI_TCH3: case MI_TCH4:   /* (MIDI IN TRACK: what the channel no longer hears let */
         mch_set(row - MI_TCH1, v);                     /* go, seq.c events_block) */
         midi_route = MIDI_ROUTE_AGAIN;

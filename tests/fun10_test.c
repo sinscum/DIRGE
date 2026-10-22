@@ -758,6 +758,35 @@ static int midi_track_fmt(void)
     return bad;
 }
 
+/* DIRGE: MENU > AUDIO > KEYS and SPLIT in the 2 spare bytes before MIDI IN TRACK's (PROJ_KEYS_OFF): OFF / C4 (the
+ * zeroed song) pack as 0 0, so a project without them is byte for byte as before; set, they round-trip; a FUN10
+ * written before reads KEYS OFF, SPLIT C4; values out of range read as those */
+static int keys_fmt(void)
+{
+    int bad = 0, ok;
+    uint32_t i;
+    project_t a, b;
+    static project_store_t st;
+    song.keys = song.ksplit = 0;
+    project_capture(&a);
+    ok = PROJ_KEYS_OFF == PROJ_MIDI_OFF - 2u && proj_pack(&st, &a) && !st.raw[PROJ_KEYS_OFF] && !st.raw[PROJ_KEYS_OFF + 1u];
+    bad += check("KEYS (DIRGE): OFF, SPLIT C4 pack as 0 0 (as every project before)", ok);
+    song.keys = 6;                                       /* SPLIT T2 */
+    song.ksplit = 20;                                    /* key 0: F3 */
+    project_capture(&a);
+    ok = proj_pack(&st, &a) && st.raw[PROJ_KEYS_OFF] == 6u && st.raw[PROJ_KEYS_OFF + 1u] == 20u &&
+         proj_import(&b, &st, sizeof st) && !memcmp(&a, &b, sizeof a) && b.keys == 6u && b.ksplit == 20u;
+    bad += check("  SPLIT T2 at F3: the 2 bytes, round trip", ok);
+    st.raw[PROJ_KEYS_OFF] = 9;                           /* out of range: OFF, C4 */
+    st.raw[PROJ_KEYS_OFF + 1u] = 27;
+    i = proj_hash(st.raw, PROJ_STORE_SIZE - 4u);
+    memcpy(st.raw + PROJ_STORE_SIZE - 4u, &i, 4);
+    ok = proj_import(&b, &st, sizeof st) && !b.keys && !b.ksplit;
+    bad += check("  out of range (KEYS 9, SPLIT 27): read as OFF, C4", ok);
+    song.keys = song.ksplit = 0;
+    return bad;
+}
+
 int main(void)
 {
     int bad = 0;
@@ -766,6 +795,7 @@ int main(void)
     bad += motion128();
     bad += formats();
     bad += midi_track_fmt();
+    bad += keys_fmt();
     printf(bad ? "ui: 1.2 FORMAT (FUN10) TEST FAILED\n" : "1.2 format (FUN10) tests passed\n");
     return bad != 0;
 }

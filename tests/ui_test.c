@@ -1652,10 +1652,11 @@ static int test_menu_tabs(void)
             }
     }
     ui_prefs = 0;
-    bad += check("MENU tabs: DISPLAY CONTROL AUDIO MIDI SYSTEM (8 8 6 8 8 rows: 1.6.1 2ND CORE, DIRGE's SCENE, a FELUCCA_CPU2=0 build SYSTEM 7; 1.5.5: SELECT, T1..T4 CHANNEL, AUTO SELECT, SCREEN WAKE), 1..8 each in a run, fit the page; tab gaps "
+    bad += check("MENU tabs: DISPLAY CONTROL AUDIO MIDI SYSTEM (8 8 8 8 8 rows: 1.6.1 2ND CORE, DIRGE's SCENE and KEYS / SPLIT (AUDIO), a FELUCCA_CPU2=0 build SYSTEM 7; 1.5.5: SELECT, T1..T4 CHANNEL, AUTO SELECT, SCREEN WAKE), 1..8 each in a run, fit the page; tab gaps "
                  "constant (S, LARGE)",
                  ok && MTAB_COUNT == 5u && str_eq(MTAB_NAME[0], "DISPLAY") && str_eq(MTAB_NAME[MTAB_MIDI], "MIDI") &&
-                 mtab_rows(MTAB_DISPLAY) == 8u && MI_TAB[MI_HOME] == MTAB_DISPLAY && mtab_rows(MTAB_CONTROL) == 8u && MI_TAB[MI_SELECT] == MTAB_CONTROL && mtab_rows(MTAB_AUDIO) == 6u &&
+                 mtab_rows(MTAB_DISPLAY) == 8u && MI_TAB[MI_HOME] == MTAB_DISPLAY && mtab_rows(MTAB_CONTROL) == 8u && MI_TAB[MI_SELECT] == MTAB_CONTROL && mtab_rows(MTAB_AUDIO) == 8u &&   /* (DIRGE: + KEYS, SPLIT) */
+                
                  mtab_rows(MTAB_MIDI) == 8u && MI_TAB[MI_MFOLLOW] == MTAB_MIDI && MI_TAB[MI_SCRWAKE] == MTAB_MIDI && MI_SCRWAKE + 1u == MI_LCLEAR && MI_TAB[MI_LCLEAR] == MTAB_MIDI && MI_TAB[MI_TCH4] == MTAB_MIDI && mtab_rows(MTAB_SYSTEM) == 7u + FELUCCA_CPU2 && MI_TAB[MI_SCENE] == MTAB_SYSTEM &&   /* (DIRGE: + SCENE) */
 #if FELUCCA_CPU2
                  MI_TAB[MI_CPU2] == MTAB_SYSTEM &&
@@ -4434,6 +4435,56 @@ static int pr_columns_match(const track_t *t, uint32_t *nbars)
         for (r = 0; r < PR_ROWS; r++) *nbars += (got >> r) & 1u;
     }
     return ok;
+}
+/* DIRGE: MENU > AUDIO > KEYS. LAYER T2: a key plays the selected track and T2, each its own mapping (TRN), and its
+ * release ends both; T2 selected, it plays once. SPLIT T2 at C4: the keys under it play T2 alone, the rest the selected
+ * track. The DRUM grid ignores it. The rows' names */
+static int test_keys_layer(void)
+{
+    int bad = 0, ok;
+    ui_power_on();
+    trk[0].p[P_VOICE] = trk[1].p[P_VOICE] = V_POLY;
+    trk[1].p[P_TRANS] = 12;
+    song.sel = 0;
+    song.keys = 2;                                                    /* LAYER T2 */
+    key_down(7); frame();
+    ok = gated_notes(&trk[0]) == 1u && gated_notes(&trk[1]) == 1u && kb_note[7 + 27] == kb_note[7] + 12u &&
+         kb_trk[7 + 27] == 1u;
+    key_up(7); frame();
+    ok &= !gated_notes(&trk[0]) && !gated_notes(&trk[1]);
+    bad += check("KEYS LAYER T2 (DIRGE): a key plays T1 and T2 (its TRN), its release ends both", ok);
+    song.sel = 1;
+    key_down(7); frame();
+    ok = !gated_notes(&trk[0]) && gated_notes(&trk[1]) == 1u && kb_note[7 + 27] == KB_SILENT;
+    key_up(7); frame();
+    bad += check("  T2 selected: it plays once", ok && !gated_notes(&trk[1]));
+    song.sel = 0;
+    key_down(7); frame();
+    song.keys = 0;                                                    /* changed while held: the release as pressed */
+    key_up(7); frame();
+    bad += check("  KEYS OFF while a key is held: its release still ends both", !gated_notes(&trk[0]) && !gated_notes(&trk[1]));
+    song.keys = 6;                                                    /* SPLIT T2, at C4 (key 7) */
+    key_down(3); frame();
+    ok = !gated_notes(&trk[0]) && gated_notes(&trk[1]) == 1u && kb_trk[3] == 1u;
+    key_up(3); frame();
+    key_down(7); frame();
+    ok &= gated_notes(&trk[0]) == 1u && !gated_notes(&trk[1]);
+    key_up(7); frame();
+    bad += check("  SPLIT T2 at C4: under it T2 alone, from C4 the selected track", ok && !gated_notes(&trk[0]));
+    song.ksplit = 20;                                                 /* key 0 (F3): nothing under it */
+    key_down(3); frame();
+    ok = gated_notes(&trk[0]) == 1u && !gated_notes(&trk[1]);
+    key_up(3); frame();
+    bad += check("  SPLIT at F3: every key the selected track", ok);
+    ok = str_eq(menu_vname(MI_KEYS, 0), "OFF") && str_eq(menu_vname(MI_KEYS, 2), "LAYER T2") &&
+         str_eq(menu_vname(MI_KEYS, 8), "SPLIT T4") && menu_get(MI_KSPLIT) == 0u && str_eq(menu_vname(MI_KSPLIT, 0), "F3") &&
+         str_eq(menu_vname(MI_KSPLIT, 7), "C4") && str_eq(menu_vname(MI_KSPLIT, 26), "G5") && MI_PROJECT(MI_KEYS) &&
+         MI_PROJECT(MI_KSPLIT) && MI_TAB[MI_KEYS] == MTAB_AUDIO && MI_TAB[MI_KSPLIT] == MTAB_AUDIO;
+    menu_put(MI_KSPLIT, 7);
+    ok &= !song.ksplit && menu_get(MI_KSPLIT) == 7u;
+    bad += check("  MENU > AUDIO: KEYS OFF .. LAYER T2 .. SPLIT T4, SPLIT F3 .. C4 .. G5 (C4: 0, the project's)", ok);
+    song.keys = song.ksplit = 0;
+    return bad;
 }
 /* 1.2, Discussion #133: step recording on SEQ > STEP. Not armed, the keys only play (being on SEQ writes nothing);
  * REC there arms step recording without starting the transport; armed and stopped a key (keys held together: a
@@ -7975,7 +8026,9 @@ static int test_click_menu(void)
     turn(EN_PRESET, 1); ok &= ui.menu_sel == MI_COUNTIN;
     turn(EN_K4, 1); ok &= cin_bars == 1u;
     turn(EN_K4, 1); ok &= cin_bars == 2u;
-    turn(EN_PRESET, 1); ok &= ui.menu_sel == MI_TUNE;     /* (1.2: TUNE, AUDIO's last) */
+    turn(EN_PRESET, 1); ok &= ui.menu_sel == MI_TUNE;     /* (1.2: TUNE, AUDIO's last; DIRGE: then KEYS, SPLIT) */
+    turn(EN_PRESET, 1); ok &= ui.menu_sel == MI_KEYS;
+    turn(EN_PRESET, 1); ok &= ui.menu_sel == MI_KSPLIT;
     turn(EN_PRESET, 1); ok &= ui.menu_sel == MI_LOWCUT;   /* (wraps within AUDIO) */
     press(B_HOME);
     ok &= !ui.menu;
@@ -9845,6 +9898,7 @@ int main(void)
     bad += test_rec();
     bad += test_step_rec();
     bad += test_step_rec();
+    bad += test_keys_layer();
     bad += test_step_preview_chord_entry();
     bad += test_presets_knob();
     bad += test_midi();

@@ -358,7 +358,15 @@ typedef struct {
                                   * zeroed default, is T1..T4 on channels 1..4), MCH_OMNI (any channel no track has), MCH_OFF
                                   * (none); mch_get / mch_set. The project's, in FUN10's spare bytes (project.c PROJ_MIDI_OFF);
                                   * MENU > MIDI > T1..T4 CHANNEL */
+    uint8_t keys, ksplit;        /* DIRGE: MENU > AUDIO > KEYS, OFF, LAYER T1..T4 (a key plays the selected track and that
+                                  * one), SPLIT T1..T4 (the keys under SPLIT play that one, the rest the selected track);
+                                  * SPLIT, the first key over it as its distance up from C4 (key 7), round the 27 (0: C4, as
+                                  * the zeroed song: KSPLIT_KEY). The project's (project.c PROJ_KEYS_OFF); seq.c keys_track */
 } song_t;
+#define KEYS_LAYER_N 4u              /* song.keys: 0 OFF, 1..4 LAYER T1..T4, 5..8 SPLIT T1..T4 */
+#define KEYS_N 9u
+#define KSPLIT_C4 7u                 /* key 7, F3 + 7 */
+#define KSPLIT_KEY() ((song.ksplit + KSPLIT_C4) % 27u)   /* SPLIT's key, 0..26 (F3..G5 at OCT 0) */
 #define ROUTE_SEL 1
 #define ROUTE_TRACK 5                /* G_ROUTE: TRACK, each track on its own channel (song.mch) */
 #define MCH_OMNI 16u
