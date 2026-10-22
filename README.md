@@ -14,17 +14,32 @@ Try it in your browser, install it and edit it from Chrome or Edge: <https://sin
 
 ## What DIRGE adds
 
-- **DRONE** (`firmware/src/eng_drone.c`), first in the PRESETS engine list (power-on still plays Felucca's
-  sounds; a DIRGE scene comes later): four polyBLEP saws, two at the note and
-  two an octave down, pushed apart by DTN and pulled about by DRFT (one slow random walk, each saw following it its
-  own way), a sine SUB, BRTH (noise), DRV (tanh) and a rounded resonant low-pass. HOME's knobs: DTN, CUT, SUB, DRFT.
-  Presets DIRGE, BLACK MASS, SHIVER, FURNACE, ASH WIND. Up to 4 voices (16 saws).
+- **Power-on scenes** (MENU > SYSTEM > SCENE): **DIRGE** by default (DRONE on T1, TRIO's FAT BASS with a pattern on T2,
+  NOISE's WIND on T3, DRUM's DEEP KIT on T4; 90 BPM), **FELUCCA** (Felucca's own power-on) or **BLANK**.
+- **DRONE** (`firmware/src/eng_drone.c`), first in the PRESETS engine list: polyBLEP saws pushed apart by DTN and
+  pulled about by DRFT (one slow random walk, each saw following it its own way), a sine SUB, BRTH (noise), DRV
+  (tanh) and a rounded resonant low-pass. WAVE: **DRONE** (two saws at the note, two an octave down), **HIGH** (the
+  upper pair alone) or **SUPER** (seven saws at the JP-8000 supersaw's offsets, DTN their spread). HOME's knobs: DTN,
+  CUT, SUB, DRFT. Presets DIRGE, BLACK MASS, SHIVER, FURNACE, ASH WIND, GRAVEWAVE (a supersaw pad) and NEON TOMB (a
+  mono darksynth lead). Up to 4 voices.
+- **FX > TAPE**, a page of three knobs, all off by default:
+  - **TAPE**: the whole mix through a worn cassette (wow, flutter, saturation, a high cut, hiss that follows the music).
+  - **ROOM**: a dead channel's room tone under the mix (static, 50 Hz hum, crackle), into the reverb too.
+  - **WEAR**: the delay worn into a tape echo (wow and flutter on its read, darker and saturated repeats).
+- **REVERB TYPE VAULT**: HALL stretched to ~32 s, and at SIZE 127 **INF**, a freeze that holds what is in it.
+- **Dark scales**: PHDOM (Phrygian dominant), HUNG (Hungarian minor), DHARM (double harmonic).
+- **KEYS LAYER / SPLIT** (MENU > AUDIO > KEYS, SPLIT; saved with the project): LAYER plays the selected track and a
+  second one from every key; SPLIT plays a second track from the keys under the split point (C4 by default).
 - **DIRGE's DSP** (`firmware/src/dirge/`), beside Felucca-Engines' `dsp.c`: the rounded SVF low-pass (no DC creeping
-  into a long low drone) and white, pink, brown, crackle and shift-register noise.
+  into a long low drone), white, pink, brown, crackle and shift-register noise, the tape and the room tone.
 - **The site**: the emulator in DIRGE's dead-channel room, with a live oscilloscope of its output.
 
-Next: distortion, fold and crush; chaos and feedback oscillators; a mono darksynth bass; slow random modulation; a
-long FDN reverb and tape. See [CLAUDE.md](CLAUDE.md) for the plan and the chip's rules.
+TAPE, ROOM and WEAR use three global ids that Felucca's projects never set (the old GM drum part's level and reverb,
+and an unused editor id), so every Felucca project opens with them off and plays as it did. KEYS uses two spare bytes
+of Felucca's project format; a project without it is byte for byte what Felucca writes.
+
+Next: distortion, fold and crush; chaos and feedback oscillators; a mono darksynth bass engine; slow random
+modulation. See [CLAUDE.md](CLAUDE.md) for the plan and the chip's rules.
 
 ## Build
 

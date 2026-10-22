@@ -18,6 +18,10 @@ thanks the work below; each keeps its own licence (see [LICENSE](LICENSE), [LICE
   with the dual-core findings of [Melodee](https://github.com/keremimo/melodee) by [keremimo](https://github.com/keremimo); its audio split,
   measurements and hardening after [Jangada](https://github.com/zednaked/jangada) by [zednaked](https://github.com/zednaked) (all GPL-3.0)
 - Browser emulator: after [X0X](https://github.com/charlesvestal/fm1-x0x) by [charlesvestal](https://github.com/charlesvestal) (GPL-3.0), a Felucca fork whose browser build showed the way
+- DIRGE's TAPE (ported) and ROOM: after [GHOULBOX](https://github.com/jasonpersinger/ghoulbox-fm1-dungeon-synth) by
+  [jasonpersinger](https://github.com/jasonpersinger) (GPL-3.0), its tape and its cave ambience; KEYS LAYER / SPLIT
+  after its keyboard layer. REVERB VAULT and DRONE's SUPER: after [GR!MM](https://github.com/GRiMMBIENT/grimm)'s long
+  reverb with its freeze, and its supersaw, with Adam Szabo's offsets ("How to Emulate the Super Saw", 2010)
 - Package format and boot files: [JieLi AC79 SDK](https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK) ([Apache-2.0](LICENSES/Apache-2.0.txt); three of its files are in every package, none in this tree)
 - Contributions: [keremimo](https://github.com/keremimo) (white-key scales, #2), [ChanceTheMaker](https://github.com/ChanceTheMaker)
   (TRS MIDI, bend, sustain and clock, palettes, favourites, editor display settings: #8, #10, #11, #12),
