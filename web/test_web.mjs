@@ -295,10 +295,10 @@ async function editorMock() {
     const r0 = E.parse[E.CMD.SET](await rq(E.req.set(1, 24, 0)));
     const inert = [25, 26].map(async (id) => E.parse[E.CMD.DESC](await rq(E.req.desc(1, id))));
     const [d25, d26] = await Promise.all(inert);
-    /* DIRGE: VAULT appended (3); id 25 is DIRGE's TAPE, 26 still inert */
+    /* DIRGE: VAULT appended (3); ids 25, 26 are DIRGE's TAPE and ROOM */
     ok(rd.label === "TYPE" && rd.def === 2 && eq(rd.names, ["ROOM", "SPRING", "HALL", "VAULT"]) && r1.value === 3 && r0.value === 0 &&
-       d25.label === "TAPE" && d26.label === "-" && d25.max === 127 && info.gcount === 27,
-      "editor: REVERB TYPE (ROOM / SPRING / HALL / VAULT, global id 24; 25 TAPE, 26 still inert)");
+       d25.label === "TAPE" && d26.label === "ROOM" && d25.max === 127 && d26.max === 127 && info.gcount === 27,
+      "editor: REVERB TYPE (ROOM / SPRING / HALL / VAULT, global id 24; 25 TAPE, 26 ROOM)");
   }
   const st = E.parse[E.CMD.STEP_SET](await rq(E.req.stepSet(5, { n: 2, notes: [60, 64], time: 0, flags: 1, vel: 100 })));
   ok(st.n === 2 && st.notes[1] === 64 && st.vel === 100, "editor: STEP_SET");

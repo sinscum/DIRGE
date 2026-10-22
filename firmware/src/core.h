@@ -98,6 +98,7 @@ enum {                          /* global parameters */
  * (range 0..0) in every project since 1.0 (the import of an older one zeroes them after reading: project.c), G_ENGGO
  * was never read. 0 = off: every project before DIRGE plays as it did */
 #define G_TAPE G_DRLVL           /* FX > TAPE: the master tape (dirge/tape.c) */
+#define G_ROOM G_DRREV           /* FX > TAPE: the room tone (dirge/room.c) */
 
 /* stored parameters of an older layout -> today's P_* order. A store keeps np = the P_COUNT it was
  * written with; common parameters are only ever added just before P_E0, so the first np - 8 are

@@ -222,7 +222,7 @@ static const param_desc_t GP[G_COUNT] = {
      * on any part). On no page; kept so the ids and G_COUNT, which the project format and the
      * editor protocol depend on, do not move */
     [G_DRLVL] = PD("TAPE", F_PCT, 0, 127, 0),   /* DIRGE: G_TAPE (core.h) */
-    [G_DRREV] = PD("-", F_INT, 0, 0, 0),
+    [G_DRREV] = PD("ROOM", F_PCT, 0, 127, 0),   /* DIRGE: G_ROOM (core.h) */
 };
 
 static const param_desc_t *track_desc(const track_t *t, uint32_t id)
@@ -460,7 +460,7 @@ static const page_t PAGES[] = {
     {"DLY", FAM_FX, SC_GLOBAL, GR_NONE, {G_DTIME, G_DFDBK, G_DCOLOR, G_DMIX}},
     {"REVERB", FAM_FX, SC_GLOBAL, GR_NONE, {G_RTYPE, G_RSIZE, G_RDAMP, 0xFF}},   /* TYPE: ROOM / SPRING / HALL */
     {"CHORUS", FAM_FX, SC_GLOBAL, GR_NONE, {G_CRATE, G_CDEPTH, 0xFF, 0xFF}},
-    {"TAPE", FAM_FX, SC_GLOBAL, GR_NONE, {G_TAPE, 0xFF, 0xFF, 0xFF}},   /* DIRGE: the master tape (dirge/tape.c) */
+    {"TAPE", FAM_FX, SC_GLOBAL, GR_NONE, {G_TAPE, G_ROOM, 0xFF, 0xFF}},   /* DIRGE: the master tape, the room tone */
     {"SCL", FAM_SCL, SC_TRACK, GR_SCALE, {P_ROOT, P_SCALE, P_QUANT, P_TRANS}},
     {"CHORD", FAM_SCL, SC_TRACK, GR_CHORD, {P_CHRD, P_VOIC, 0xFF, 0xFF}},   /* SCL again: the chord keys (chord.c) */
     {"EDIT 1", FAM_EDIT, SC_ENGINE, GR_NONE, {P_E0, P_E1, P_E2, P_E3}},

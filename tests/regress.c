@@ -84,11 +84,50 @@ static uint32_t sounding(void)                 /* part voices sounding (not the 
 
 /* one block of the mix into the hash and the numbers */
 static int32_t last_out[2 * CTL];
+/* DIRGE: REGRESS_WAV=dir writes the dirge/* renders as 16-bit stereo WAVs there (to listen to; CI keeps them) */
+static FILE *wav_f;
+static uint32_t wav_n;
+static void wav_open(const char *name)
+{
+    const char *dir = getenv("REGRESS_WAV");
+    char path[256], *p;
+    static const uint8_t HDR[44] = {'R', 'I', 'F', 'F', 0, 0, 0, 0, 'W', 'A', 'V', 'E', 'f', 'm', 't', ' ', 16, 0, 0, 0, 1, 0, 2, 0,
+                                    0x44, 0xAC, 0, 0, 0x10, 0xB1, 2, 0, 4, 0, 16, 0, 'd', 'a', 't', 'a', 0, 0, 0, 0};
+    wav_f = 0;
+    wav_n = 0;
+    if (!dir || !*dir)
+        return;
+    snprintf(path, sizeof path, "%s/%s.wav", dir, name);
+    for (p = path + strlen(dir) + 1; *p; p++)
+        if (*p == '/')
+            *p = '-';
+    wav_f = fopen(path, "wb");
+    if (wav_f)
+        fwrite(HDR, 1, sizeof HDR, wav_f);
+}
+static void wav_close(void)
+{
+    uint32_t b = wav_n * 2u, riff = 36u + b;
+    if (!wav_f)
+        return;
+    fseek(wav_f, 4, SEEK_SET);
+    fwrite(&riff, 4, 1, wav_f);
+    fseek(wav_f, 40, SEEK_SET);
+    fwrite(&b, 4, 1, wav_f);
+    fclose(wav_f);
+    wav_f = 0;
+}
+
 static void blk(void)
 {
     int32_t *o = last_out;
     uint32_t i, k;
     mix_block(o, CTL);
+    if (wav_f)
+        for (i = 0; i < 2u * CTL; i++, wav_n++) {
+            int16_t v = (int16_t)(o[i] > 32767 ? 32767 : o[i] < -32768 ? -32768 : o[i]);
+            fwrite(&v, 2, 1, wav_f);
+        }
     for (i = 0; i < 2u * CTL; i++) {
         int32_t x = o[i], a = x < 0 ? -x : x;
         uint32_t u = (uint32_t)x;
@@ -208,6 +247,25 @@ static void job_sends(const job_t *j)           /* arg: 0 dry, 1 chorus, 2 delay
     phrase(t, 60);
 }
 
+/* phrase, and at its note-offs global g turned to 0 (DIRGE's ROOM plays on its own: then it fades out) */
+static void phrase_off(track_t *t, uint32_t base, uint32_t g)
+{
+    static const uint8_t CH[5] = {0, 7, 12, 16, 19};
+    uint32_t i;
+    input_on(t, base, 100);
+    run_to(at(0.30));
+    input_off(t, base);
+    for (i = 0; i < 5u; i++)
+        input_on(t, base - 12u + CH[i], 90 + 5 * i);
+    run_to(at(1.80));
+    for (i = 0; i < 5u; i++)
+        input_off(t, base - 12u + CH[i]);
+    song.g[g] = 0;
+    rel_at = fpos;
+    dc_end = fpos + FS / 2u;
+    finish();
+}
+
 /* phrase, its tail then held 3 s before SIZE 30 lets it go (DIRGE's VAULT: a tail of up to INF would never end) */
 static void phrase_hold(track_t *t, uint32_t base)
 {
@@ -266,7 +324,8 @@ static int chk_vault(char *msg, uint32_t n)
 }
 
 /* DIRGE's master effects: the "all" sends phrase (job_sends 4) of DRONE DIRGE with one of them on, so each has its
- * renders and health checks. arg: 0 TAPE (dirge/tape.c), 1 VAULT 32 s, 2 VAULT INF then let go to 90 (fx.c) */
+ * renders and health checks. arg: 0 TAPE (dirge/tape.c), 1 VAULT 32 s, 2 VAULT INF (fx.c), 3 ROOM (dirge/room.c: turned
+ * down at the note-offs, as it plays on its own) */
 static void job_dirge(const job_t *j)
 {
     static const int16_t S[4] = {40, 80, 80, 80};
@@ -281,6 +340,11 @@ static void job_dirge(const job_t *j)
     case 0: song.g[G_TAPE] = 100; break;
     case 1: song.g[G_RTYPE] = 3; song.g[G_RSIZE] = 126; break;
     case 2: song.g[G_RTYPE] = 3; song.g[G_RSIZE] = 127; break;
+    case 3: song.g[G_ROOM] = 110; break;
+    }
+    if (j->arg == 3u) {                        /* ROOM: turned down at the note-offs */
+        phrase_off(t, 48, G_ROOM);
+        return;
     }
     if (j->arg >= 1u) {                        /* VAULT: the tail held 3 s, then SIZE 30 lets it die away */
         phrase_hold(t, 48);
@@ -468,7 +532,9 @@ static int run_job_body(job_t *j)
         job_drums(j);
         break;
     case J_DIRGE:
+        wav_open(j->name);
         job_dirge(j);
+        wav_close();
         break;
     case J_SONG:
         job_song(j);
@@ -1150,7 +1216,7 @@ int main(int argc, char **argv)
             j->arg = (uint8_t)k0;
         }
     {   /* DIRGE's master effects, on DRONE DIRGE (job_dirge) */
-        static const char *const DN[] = {"tape", "vault", "vault_inf"};
+        static const char *const DN[] = {"tape", "vault", "vault_inf", "room"};
         for (k0 = 0; k0 < sizeof DN / sizeof DN[0]; k0++) {
             job_t *j;
             snprintf(name, sizeof name, "dirge/%s", DN[k0]);

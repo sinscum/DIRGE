@@ -103,6 +103,7 @@ sends/ANALOG/dist 1ff75ac225e918e0
 dirge/tape 37ab3035c16abaf9
 dirge/vault 2e287b56cf02fe30
 dirge/vault_inf 4da4759f27594867
+dirge/room ff34914ede40d061
 song/4track_mix 6667b6c911a3b548
 slicer/gate/ANALOG_ACID 07581a19222c2474
 slicer/song_gate_stut 7e91d788f9dedecc
