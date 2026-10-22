@@ -1649,9 +1649,11 @@ static void draw(int s)
         in_splash = 0;
         {   /* the square whole on the screen (176 x 176 at 32,32, more than the canvas): its edges and square corners
              * RAISE, BG just outside; its text's ink 16 px in from the left and the top (the bottom: AL_B, the hook) */
+            /* (DIRGE: the square is a 2 px THEME frame round BG, ui_draw.c SPL_FRAME: ra is the frame's colour, and the
+             * ink measured is what is not BG inside it) */
             const int32_t q0 = 32, q1 = 32 + 176 - 1;
-            uint16_t bg = host_screen[0], ra = host_screen[(uint32_t)(q0 + 1) * 240u + (uint32_t)q0 + 1];
-            int32_t i, x, y, ix = 999, iy = 999, bad = ra == bg;
+            uint16_t bg = host_screen[0], ra = host_screen[(uint32_t)q0 * 240u + (uint32_t)q0];
+            int32_t i, x, y, ix = 999, iy = 999, bad = ra == bg || host_screen[(uint32_t)(q0 + 1) * 240u + (uint32_t)q0 + 1] != ra;
             for (i = q0 - 1; i <= q1 + 1; i++) {
                 int32_t in = i >= q0 && i <= q1;
                 bad |= host_screen[(uint32_t)(q0 - 1) * 240u + (uint32_t)i] != bg || host_screen[(uint32_t)(q1 + 1) * 240u + (uint32_t)i] != bg
@@ -1660,9 +1662,9 @@ static void draw(int s)
                     bad |= host_screen[(uint32_t)q0 * 240u + (uint32_t)i] != ra || host_screen[(uint32_t)q1 * 240u + (uint32_t)i] != ra
                         || host_screen[(uint32_t)i * 240u + (uint32_t)q0] != ra || host_screen[(uint32_t)i * 240u + (uint32_t)q1] != ra;
             }
-            for (y = q0; y <= q1; y++)
-                for (x = q0; x <= q1; x++)
-                    if (host_screen[(uint32_t)y * 240u + (uint32_t)x] != ra) {
+            for (y = q0 + 2; y <= q1 - 2; y++)
+                for (x = q0 + 2; x <= q1 - 2; x++)
+                    if (host_screen[(uint32_t)y * 240u + (uint32_t)x] != bg) {
                         if (x - q0 < ix) ix = x - q0;
                         if (y - q0 < iy) iy = y - q0;
                     }
@@ -2231,7 +2233,7 @@ int main(int argc, char **argv)
     const char *out = argc > 1 ? argv[1] : "build/ui_new";
     char path[600];
     uint32_t p, s;
-    static const char *const SHOW[] = {"GREY", "MONO", "GREEN", "PAPER", "NIGHT"};   /* (NIGHT: #50, to review) */
+    static const char *const SHOW[] = {"GREY", "MONO", "GREEN", "PAPER", "NIGHT", "BLOOD", "CRYPT", "NEON"};   /* (NIGHT: #50, to review; DIRGE: its own) */
     snprintf(path, sizeof path, "%s/report.txt", out);
     rep = fopen(path, "w");
     if (!rep) { fprintf(stderr, "cannot write %s\n", path); return 1; }

@@ -32,6 +32,9 @@ Try it in your browser, install it and edit it from Chrome or Edge: <https://sin
   second one from every key; SPLIT plays a second track from the keys under the split point (C4 by default).
 - **DIRGE's DSP** (`firmware/src/dirge/`), beside Felucca-Engines' `dsp.c`: the rounded SVF low-pass (no DC creeping
   into a long low drone), white, pink, brown, crackle and shift-register noise, the tape and the room tone.
+- **The look**: three palettes, **BLOOD** (the default: black, bone and blood red, a ghost-cyan cursor), **CRYPT**
+  (grave violet, toxic green) and **NEON** (an 80s horror poster's magenta and cyan) in MENU > DISPLAY > COLOR, and a
+  splash framed like a coffin lid. Felucca's palettes are all still there.
 - **The site**: the emulator in DIRGE's dead-channel room, with a live oscilloscope of its output.
 
 TAPE, ROOM and WEAR use three global ids that Felucca's projects never set (the old GM drum part's level and reverb,
