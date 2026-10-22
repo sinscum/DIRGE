@@ -585,6 +585,22 @@ static __attribute__((noinline)) void rev_switch(const int32_t *rev_in, int32_t 
     fx.rtype = (uint8_t)rt;
 }
 
+/* DIRGE: WEAR (G_WEAR on FX > TAPE), the delay worn as a tape echo (after GR!MM's DELAY, GRiMMBIENT/grimm tape.c and
+ * wear.c, GPL-3.0, itself after X0X's TAPE delay): the read moves with a wow (0.5 and 0.19 Hz, not quite periodic) and a
+ * flutter (6.1 Hz), read between samples; the loop darker (its low-pass down to ~0.4 of COLR's); a tanh in the loop
+ * (drive 1x .. ~1.8x, made up) so the feedback may go past unity (FDBK 120 up to ~1.1 at WEAR 127) and hold instead of
+ * running away; a DC block in the loop (~30 Hz, as GR!MM's), so the rounding of a loop that keeps its energy builds
+ * no offset. WEAR 0: the delay's steps as they were, bit for bit */
+static struct {
+    uint32_t p1, p2, p3;                 /* the wow's and the flutter's phases */
+    int32_t d;                           /* the read's delay at the block's end, Q8 samples */
+    int32_t dc, de;                      /* the loop's DC block (~30 Hz) and its step's remainder */
+    uint8_t on;
+} dw;
+#define DW_W1 1558426u                   /* 0.5 Hz: a block's step (2^32 x CTL / FS x Hz) */
+#define DW_W2 592207u                    /* 0.19 Hz */
+#define DW_W3 19013000u                  /* 6.1 Hz */
+
 /* process the three buses for one block; sends in, wet stereo-equal out */
 static void fx_buses(const int32_t *cho_in, const int32_t *dly_in, const int32_t *rev_in, int32_t *wet,
                      uint32_t n)
@@ -597,6 +613,27 @@ static void fx_buses(const int32_t *cho_in, const int32_t *dly_in, const int32_t
     if (pf.ew1 && fb < THR_FB)
         fb += mulq16(THR_FB - fb, (uint32_t)pf.ew1 << 1);   /* ECHO THROW (perform.c): more feedback while held, 0.7
                                                              * at most (the loop's gain below 1: it never runs away) */
+    int32_t wr = song.g[G_WEAR], wd0 = 0, wdd = 0, wdrv = 0, wmk = 0;
+    if (wr) {                                           /* DIRGE: WEAR's block (dw, above) */
+        int32_t reach = wr * wr / 400, wd1, lim = (int32_t)(DLY_LEN - 4u) << 8;   /* the wow's reach: up to ~40 samples */
+        if (!dw.on) {
+            dw.d = (int32_t)dl << 8;
+            dw.dc = dw.de = 0;
+            dw.on = 1;
+        }
+        dw.p1 += DW_W1, dw.p2 += DW_W2, dw.p3 += DW_W3;
+        wd1 = ((int32_t)dl << 8) + (((osc_sine(dw.p1) + (osc_sine(dw.p2) >> 1)) * reach) >> 7) +
+              ((osc_sine(dw.p3) * (wr >> 5)) >> 7);          /* (the flutter: up to ~3 samples) */
+        wd1 = clamp(wd1, 16 << 8, lim);
+        wd0 = dw.d;
+        wdd = n ? (wd1 - wd0) / (int32_t)n : 0;         /* (n is a block, never 0) */
+        dw.d = wd1;
+        col = mulq15(col, 32767 - wr * 150);            /* darker repeats */
+        fb += mulq15(fb, wr * 77);                      /* past unity at the top: the tanh holds it */
+        wdrv = 32768 + wr * 200;                        /* the drive (Q15), and its make-up (Q15: 1 / drive) */
+        wmk = (int32_t)((1u << 30) / (uint32_t)wdrv);
+    } else
+        dw.on = 0;
     for (i = 0; i < n; i++) {
         int32_t y = 0, x, r;
         /* chorus: modulated short delay, 5..15 ms */
@@ -611,10 +648,28 @@ static void fx_buses(const int32_t *cho_in, const int32_t *dly_in, const int32_t
         }
         fx.cho_w++;
         /* delay with a low-passed feedback */
+        if (wr) {                                       /* DIRGE: WEAR, the read between samples, a tanh in the loop */
+            int32_t d = wd0 + wdd * (int32_t)(i + 1u), f = d & 255, x1, v;
+            uint32_t di = (uint32_t)d >> 8;
+            x = dly_buf[(fx.dly_w - di) & (DLY_LEN - 1u)];
+            x1 = dly_buf[(fx.dly_w - di - 1u) & (DLY_LEN - 1u)];
+            x += ((x1 - x) * f + 128) >> 8;
+            fx.dly_lp += mulq15(x - fx.dly_lp, col);
+            v = (dly_in[i] >> 1) + mulq15(fx.dly_lp, fb);
+            v = mulq15(softclip((clamp(v, -98304, 98304) * (wdrv >> 4)) >> 11), wmk);   /* (|v| x drive / 2^15) */
+            {                                           /* the DC block: v less its ~30 Hz low-pass (remainder kept) */
+                int32_t e = v - dw.dc + dw.de;
+                dw.de = e & 255;
+                dw.dc += e >> 8;
+                v -= dw.dc;
+            }
+            dly_buf[fx.dly_w & (DLY_LEN - 1u)] = (int16_t)clamp(v, -32768, 32767);
+        } else {
         x = dly_buf[(fx.dly_w - dl) & (DLY_LEN - 1u)];
         fx.dly_lp += mulq15(x - fx.dly_lp, col);
         dly_buf[fx.dly_w & (DLY_LEN - 1u)] =
             (int16_t)clamp((dly_in[i] >> 1) + mulq15(fx.dly_lp, fb), -32768, 32767);
+        }
         fx.dly_w++;
         y += mulq15(x << 1, dmix);
         wet[i] = y;

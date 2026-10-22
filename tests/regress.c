@@ -323,9 +323,36 @@ static int chk_vault(char *msg, uint32_t n)
     return e0[0] > 1000u && e1[0] * 2u >= e0[0] && e1[0] <= e0[0] * 2u && e1[1] * 4u < e0[1];
 }
 
+/* DIRGE: WEAR past unity holds. A chord into the delay (FDBK 120, WEAR 127: a loop gain of ~1.1), let go: the line's
+ * energy 0.5 s and 4 s after keeps at least half and gains no more than 4x (the tanh holds it: no run-away) */
+static int chk_wear(char *msg, uint32_t n)
+{
+    track_t *t = &trk[0];
+    uint64_t e0, e1;
+    uint32_t i, k;
+    host_tracks_init();
+    host_preset(t, ENGI_DRONE, 0);
+    t->p[P_DLY] = 110;
+    song.g[G_DFDBK] = 120;
+    song.g[G_WEAR] = 127;
+    for (i = 0; i < 3u; i++)
+        input_on(t, 48u + 7u * i, 110);
+    run_to(fpos + FS / 2u);
+    for (i = 0; i < 3u; i++)
+        input_off(t, 48u + 7u * i);
+    run_to(fpos + FS);
+    for (e0 = 0, k = 0; k < DLY_LEN; k++)
+        e0 += (uint64_t)(dly_buf[k] < 0 ? -dly_buf[k] : dly_buf[k]);
+    run_to(fpos + FS * 7u / 2u);
+    for (e1 = 0, k = 0; k < DLY_LEN; k++)
+        e1 += (uint64_t)(dly_buf[k] < 0 ? -dly_buf[k] : dly_buf[k]);
+    snprintf(msg, n, "the line %llu -> %llu", (unsigned long long)e0, (unsigned long long)e1);
+    return e0 > 100000u && e1 * 2u >= e0 && e1 <= e0 * 4u;
+}
+
 /* DIRGE's master effects: the "all" sends phrase (job_sends 4) of DRONE DIRGE with one of them on, so each has its
  * renders and health checks. arg: 0 TAPE (dirge/tape.c), 1 VAULT 32 s, 2 VAULT INF (fx.c), 3 ROOM (dirge/room.c: turned
- * down at the note-offs, as it plays on its own) */
+ * down at the note-offs, as it plays on its own), 4 WEAR (fx.c fx_buses: FDBK 100, past unity) */
 static void job_dirge(const job_t *j)
 {
     static const int16_t S[4] = {40, 80, 80, 80};
@@ -341,9 +368,10 @@ static void job_dirge(const job_t *j)
     case 1: song.g[G_RTYPE] = 3; song.g[G_RSIZE] = 126; break;
     case 2: song.g[G_RTYPE] = 3; song.g[G_RSIZE] = 127; break;
     case 3: song.g[G_ROOM] = 110; break;
+    case 4: song.g[G_WEAR] = 110; song.g[G_DFDBK] = 100; break;
     }
-    if (j->arg == 3u) {                        /* ROOM: turned down at the note-offs */
-        phrase_off(t, 48, G_ROOM);
+    if (j->arg >= 3u) {                        /* ROOM, WEAR: turned down at the note-offs (WEAR: its feedback) */
+        phrase_off(t, 48, j->arg == 3u ? G_ROOM : G_DFDBK);
         return;
     }
     if (j->arg >= 1u) {                        /* VAULT: the tail held 3 s, then SIZE 30 lets it die away */
@@ -1216,7 +1244,7 @@ int main(int argc, char **argv)
             j->arg = (uint8_t)k0;
         }
     {   /* DIRGE's master effects, on DRONE DIRGE (job_dirge) */
-        static const char *const DN[] = {"tape", "vault", "vault_inf", "room"};
+        static const char *const DN[] = {"tape", "vault", "vault_inf", "room", "wear"};
         for (k0 = 0; k0 < sizeof DN / sizeof DN[0]; k0++) {
             job_t *j;
             snprintf(name, sizeof name, "dirge/%s", DN[k0]);
@@ -1258,6 +1286,7 @@ int main(int argc, char **argv)
     add(J_CHECK, "voices: VOICE engine cap")->check = chk_voice_cap;
     add(J_CHECK, "routing: no hanging notes")->check = chk_hang;
     add(J_CHECK, "dirge: VAULT holds at INF, lets go below it")->check = chk_vault;
+    add(J_CHECK, "dirge: WEAR past unity holds, never runs away")->check = chk_wear;
     run_jobs(J, nj, jobs_at_once);
 
     /* 3: CPU, one child at a time (the ns are for information; the instruction counts do not care) */

@@ -27,7 +27,7 @@ static const struct { const char *title, *hint; } HELP_PAGE[] = {
     {"DLY", "[K1-4]ALL TRACKS[FX]REVERB"},
     {"REVERB", "[K1]4 TYPES[FX]CHORUS"},                /* (DIRGE: + VAULT) */
     {"CHORUS", "[K1-4]ALL TRACKS[FX]TAPE"},
-    {"TAPE", "[K1]TAPE [K2]ROOM TONE[FX]FX"},           /* DIRGE */
+    {"TAPE", "[K1]TAPE[K2]ROOM[K3]WEAR"},               /* DIRGE */
     {"SCL", "[K2]SCALE[K3]QUANTIZE[SCL]CHORDS"},
     {"CHORD", "[K1]CHORD[KEYS]ONE FINGER[SCL]SCL"},
     {"EDIT 1", H_EDIT},
