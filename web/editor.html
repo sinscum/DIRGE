@@ -1776,10 +1776,11 @@ function makeMockDevice(opt = {}) {
       presets: [P("CHOP", [0, 2, 0, 0, 0, 0, 127, 127], [0, 127, 127, 30], 0, 9), P("STUTTER", [0, 1, 0, 0, 1, 0, 90, 110], [0, 127, 127, 12], 0, 10)] },
     /* DIRGE's (src/eng_drone.c): engine 14, after SLICE */
     { name: "DRONE", titles: ["OSC", "TONE"], edit: [D("DTN", F.INT, 0, 127, 40), D("SUB", F.PCT, 0, 127, 50), D("DRFT", F.PCT, 0, 127, 30),
-        D("LOW", F.PCT, 0, 127, 127), D("CUT", F.CUTOFF, 0, 127, 70), D("RES", F.PCT, 0, 127, 24), D("DRV", F.PCT, 0, 127, 0), D("BRTH", F.PCT, 0, 127, 0)],
-      presets: [P("DIRGE", [40, 50, 30, 127, 70, 24, 0, 0], [90, 90, 127, 100], 0, 5), P("BLACK MASS", [20, 90, 15, 127, 40, 40, 10, 0], [100, 90, 127, 110], 0, 5),
-        P("SHIVER", [80, 20, 110, 90, 85, 30, 0, 20], [80, 90, 127, 100], 0, 5), P("FURNACE", [55, 60, 40, 127, 60, 70, 110, 10], [40, 90, 127, 80], 0, 5),
-        P("ASH WIND", [30, 0, 60, 60, 55, 20, 0, 90], [110, 90, 127, 115], 0, 5)] },
+        E("WAVE", ["DRONE", "HIGH", "SUPER"], 0), D("CUT", F.CUTOFF, 0, 127, 70), D("RES", F.PCT, 0, 127, 24), D("DRV", F.PCT, 0, 127, 0), D("BRTH", F.PCT, 0, 127, 0)],
+      presets: [P("DIRGE", [40, 50, 30, 0, 70, 24, 0, 0], [90, 90, 127, 100], 0, 5), P("BLACK MASS", [20, 90, 15, 0, 40, 40, 10, 0], [100, 90, 127, 110], 0, 5),
+        P("SHIVER", [80, 20, 110, 0, 85, 30, 0, 20], [80, 90, 127, 100], 0, 5), P("FURNACE", [55, 60, 40, 0, 60, 70, 110, 10], [40, 90, 127, 80], 0, 5),
+        P("ASH WIND", [30, 0, 60, 1, 55, 20, 0, 90], [110, 90, 127, 115], 0, 5), P("GRAVEWAVE", [70, 40, 25, 2, 80, 20, 0, 0], [60, 90, 120, 90], 0, 5),
+        P("NEON TOMB", [50, 20, 10, 2, 95, 45, 30, 0], [2, 80, 100, 50], 1, 4)] },
   ];
   const FM6_E = ENG.findIndex((e) => e.name === "FM6"), FM6_OWN = FM6.FACTORY_PK.length, DRUM_E = ENG.findIndex((e) => e.name === "DRUM");
   /* factory PATTERNS[] (engines.c; the device loads them from SAVE > PHRASES, presets only suggest one): absolute

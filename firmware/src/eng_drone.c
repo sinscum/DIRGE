@@ -7,13 +7,26 @@
  *   DTN   0 .. 25 cents between the saws of each pair
  *   SUB   the sine's level
  *   DRFT  the wander: 0 still .. ~12 cents, a new target every 0.7 .. 3 s, followed with a ~0.7 s lag
- *   LOW   the lower pair's level (0: the upper pair alone, thin; 127: as loud as it)
+ *   WAVE  DRONE the two pairs; HIGH the upper pair alone (thin, airy); SUPER seven saws at the note, the JP-8000's
+ *         supersaw (after GR!MM's: Adam Szabo's offsets), DTN their spread, DRFT a shimmer of it (drone_super)
  *   CUT   the low-pass's cutoff (+ FLT), RES its resonance
  *   DRV   drive into the filter: 1x .. 4x
  *   BRTH  noise under the saws
  * Voice state: ph[0..2] saws 1..3, s[4] saw 4 (a phase kept in an int), s[5] the sub's phase; s[0], s[1] the filter;
  * s[2] the random state (seeded at the note); s[3] the walk's target (high 16 bits) and its countdown (low 16); s[6]
- * where the walk is (Q19); s[7] the breath's low-pass. */
+ * where the walk is (Q19); s[7] the breath's low-pass. SUPER's seven phases: the part's engine memory (engines.c
+ * ENG_MEM, DRONE_MEM), a voice's free-running (never reset at a note: a retrigger never clicks), seeded at random the
+ * first time (dr_super_t.seeded). */
+enum { DW_DRONE, DW_HIGH, DW_SUPER, DW_N };
+static const char *const N_DRONE_WAVE[DW_N] = {"DRONE", "HIGH", "SUPER"};
+/* SUPER's saws: their offsets at full DTN, Q15 of the pitch (Adam Szabo, "How to Emulate the Super Saw" (2010), as
+ * GR!MM's SSAW_OFF_Q15); the middle one is the note */
+static const int16_t DR_SSAW[7] = {-3605, -2061, -640, 0, 652, 2037, 3521};
+typedef struct {
+    uint32_t ph[7], seeded;
+} dr_super_t;
+#define DRONE_MEM (sizeof(dr_super_t) * NVOICE)
+ENG_MEM_FITS("DRONE", DRONE_MEM);
 
 static void drone_note_on(track_t *t, voice_t *v)
 {
@@ -37,28 +50,99 @@ static inline uint32_t drone_det(uint32_t inc, int32_t c16)
     return inc + (uint32_t)(int32_t)(((int64_t)(int32_t)(inc >> 4) * (c16 * 9694)) >> 24);
 }
 
+/* the walk, once a block (as eng_noise.c's drift): a new random target every 0.7 .. 3 s, followed with a lag; the
+ * walk's place (Q19) */
+static inline int32_t drone_walk(voice_t *v, int32_t *rng, int32_t walk)
+{
+    int32_t tg = v->s[3] >> 16, cnt = v->s[3] & 0xFFFF;
+    if (--cnt <= 0) {
+        uint32_t r = noise32(rng);
+        tg = (int32_t)(r >> 16) - 32768;
+        cnt = 1024 + (int32_t)(r & 3071u);
+    }
+    v->s[3] = (int32_t)((uint32_t)tg << 16 | (uint32_t)cnt);
+    return walk + (((tg << 4) - walk) >> 10);
+}
+
+/* WAVE SUPER: seven polyBLEP saws at the note, spread by DTN (Szabo's offsets x DTN), DRFT a slow shimmer of the
+ * spread; the middle one 0.3, each side one 0.15 (as GR!MM's mix); then the sub (an octave under the note), the breath,
+ * the drive and the low-pass as DRONE's */
+static __attribute__((noinline)) void drone_super(track_t *t, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m)
+{
+    const int16_t *p = t->p;
+    dr_super_t *sp = (t >= &trk[0] && t < &trk[NPART] && (uint32_t)(v - t->v) < NVOICE)
+                         ? (dr_super_t *)ENG_MEM(t - trk) + (v - t->v) : 0;
+    int32_t ic1 = v->s[0], ic2 = v->s[1], rng = v->s[2], walk = v->s[6], br = v->s[7], i;
+    int32_t sub = p[P_E1] * 258, brth = p[P_E7] * 160, drv = p[P_E6], drive = 4096 + drv * 96;
+    int32_t spread = p[P_E0] * 258, cut = (p[P_E4] << 8) + m->cutoff;
+    uint32_t hi = m->inc, incs = hi >> 1, inc[7], ph[7], phs = (uint32_t)v->s[5], k;
+    tsvf_t flt;
+    if (!sp)
+        return;
+    if (!sp->seeded) {                              /* free-running from random phases, once */
+        for (k = 0; k < 7u; k++)
+            sp->ph[k] = noise32(&rng);
+        sp->seeded = 1;
+    }
+    walk = drone_walk(v, &rng, walk);
+    spread += (int32_t)(((int64_t)spread * (((walk >> 11) * p[P_E2]) >> 7)) >> 15);   /* DRFT: the spread +-25 % */
+    spread = clamp(spread, 0, 32767);
+    for (k = 0; k < 7u; k++) {
+        inc[k] = hi + (uint32_t)((int32_t)(hi >> 15) * ((DR_SSAW[k] * spread) >> 15));
+        ph[k] = sp->ph[k];
+    }
+    tsvf_coef(&flt, cut, p[P_E5]);
+    for (i = 0; i < (int32_t)n; i++) {
+        int32_t side = 0, mid = 0, s;
+        for (k = 0; k < 7u; k++) {
+            int32_t o = osc_saw(ph[k], inc[k]);
+            if (k == 3u)
+                mid = o;
+            else
+                side += o;
+            ph[k] += inc[k];
+        }
+        s = mulq15(mid, 9830) + mulq15(side, 4915);     /* (up to ~1.2 of a saw) */
+        s = (s * 3) >> 2;                               /* (as loud as DRONE's pairs) */
+        s += mulq15(osc_sine(phs), sub) >> 1;
+        phs += incs;
+        if (brth) {
+            br += ((int32_t)(noise32(&rng) >> 17) - 16384 - br) >> 3;
+            s += mulq15(br, brth) >> 1;
+        }
+        if (drv)
+            s = softclip((s * drive) >> 12);
+        s = soft_knee(tsvf_lp_r(&flt, s >> 1, &ic1, &ic2), 16000) << 1;
+        out[i] += voice_amp(s, m, (uint32_t)i);
+    }
+    for (k = 0; k < 7u; k++)
+        sp->ph[k] = ph[k];
+    v->s[5] = (int32_t)phs;
+    v->s[0] = ic1;
+    v->s[1] = ic2;
+    v->s[2] = rng;
+    v->s[6] = walk;
+    v->s[7] = br;
+}
+
 static void drone_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m)
 {
     const int16_t *p = t->p;
-    int32_t ic1 = v->s[0], ic2 = v->s[1], rng = v->s[2], walk = v->s[6], br = v->s[7], i;
+    int32_t ic1, ic2, rng, walk, br, i;
     uint32_t ph0 = v->ph[0], ph1 = v->ph[1], ph2 = v->ph[2], ph3 = (uint32_t)v->s[4], phs = (uint32_t)v->s[5];
     int32_t det16 = p[P_E0] * 25 * 16 / 127 / 2;    /* half each way, 1/16 cent */
-    int32_t sub = p[P_E1] * 258, low = p[P_E3] * 258, brth = p[P_E7] * 160;
+    int32_t sub = p[P_E1] * 258, low = p[P_E3] == DW_HIGH ? 0 : 127 * 258, brth = p[P_E7] * 160;   /* (WAVE: DRONE
+                                                     * the lower pair full, HIGH none) */
     int32_t drv = p[P_E6], drive = 4096 + drv * 96; /* Q12: 1x .. ~4x */
     int32_t d16, cut = (p[P_E4] << 8) + m->cutoff;
     uint32_t hi = m->inc, lo = hi >> 1, inc0, inc1, inc2, inc3, incs = hi >> 2;
     tsvf_t flt;
-    /* the walk, once a block (as eng_noise.c's drift): a new random target every 0.7 .. 3 s, followed with a lag */
-    {
-        int32_t tg = v->s[3] >> 16, cnt = v->s[3] & 0xFFFF;
-        if (--cnt <= 0) {
-            uint32_t r = noise32(&rng);
-            tg = (int32_t)(r >> 16) - 32768;
-            cnt = 1024 + (int32_t)(r & 3071u);
-        }
-        v->s[3] = (int32_t)((uint32_t)tg << 16 | (uint32_t)cnt);
-        walk += ((tg << 4) - walk) >> 10;            /* Q19 */
+    if (p[P_E3] >= DW_SUPER) {
+        drone_super(t, v, out, n, m);
+        return;
     }
+    ic1 = v->s[0], ic2 = v->s[1], rng = v->s[2], walk = v->s[6], br = v->s[7];
+    walk = drone_walk(v, &rng, walk);
     d16 = ((walk >> 11) * p[P_E2] * 3) >> 9;        /* DRFT 127, the walk at its edge: ~+-12 cents (190 / 16) */
     /* each saw its own way along the walk: +1, -0.7, +0.4, -1 */
     inc0 = drone_det(hi, det16 + d16);
@@ -98,11 +182,13 @@ static void drone_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const
 }
 
 static const preset_t DRONE_PRESETS[] = {
-    {"DIRGE", {40, 50, 30, 127, 70, 24, 0, 0}, {90, 90, 127, 100}, 0, 0, FX(0, 20, 10, 60), PAT(5)},
-    {"BLACK MASS", {20, 90, 15, 127, 40, 40, 10, 0}, {100, 90, 127, 110}, 0, 0, FX(0, 0, 0, 80), PAT(5)},
-    {"SHIVER", {80, 20, 110, 90, 85, 30, 0, 20}, {80, 90, 127, 100}, 0, 0, FX(0, 40, 20, 60), PAT(5)},
-    {"FURNACE", {55, 60, 40, 127, 60, 70, 110, 10}, {40, 90, 127, 80}, 10, 0, FX(30, 0, 20, 40), PAT(5)},
-    {"ASH WIND", {30, 0, 60, 60, 55, 20, 0, 90}, {110, 90, 127, 115}, 0, 0, FX(0, 30, 10, 90), PAT(5)},
+    {"DIRGE", {40, 50, 30, DW_DRONE, 70, 24, 0, 0}, {90, 90, 127, 100}, 0, 0, FX(0, 20, 10, 60), PAT(5)},
+    {"BLACK MASS", {20, 90, 15, DW_DRONE, 40, 40, 10, 0}, {100, 90, 127, 110}, 0, 0, FX(0, 0, 0, 80), PAT(5)},
+    {"SHIVER", {80, 20, 110, DW_DRONE, 85, 30, 0, 20}, {80, 90, 127, 100}, 0, 0, FX(0, 40, 20, 60), PAT(5)},
+    {"FURNACE", {55, 60, 40, DW_DRONE, 60, 70, 110, 10}, {40, 90, 127, 80}, 10, 0, FX(30, 0, 20, 40), PAT(5)},
+    {"ASH WIND", {30, 0, 60, DW_HIGH, 55, 20, 0, 90}, {110, 90, 127, 115}, 0, 0, FX(0, 30, 10, 90), PAT(5)},
+    {"GRAVEWAVE", {70, 40, 25, DW_SUPER, 80, 20, 0, 0}, {60, 90, 120, 90}, 10, 0, FX(0, 50, 30, 60), PAT(5)},
+    {"NEON TOMB", {50, 20, 10, DW_SUPER, 95, 45, 30, 0}, {2, 80, 100, 50}, 30, 1, FX(10, 20, 45, 30), PAT(4)},
 };
 
 static const engine_t ENG_DRONE = {
@@ -112,7 +198,7 @@ static const engine_t ENG_DRONE = {
         {"DTN", F_INT, 0, 127, 40, 0, 0},
         {"SUB", F_PCT, 0, 127, 50, 0, 0},
         {"DRFT", F_PCT, 0, 127, 30, 0, 0},
-        {"LOW", F_PCT, 0, 127, 127, 0, 0},
+        {"WAVE", F_ENUM, 0, DW_N - 1, DW_DRONE, N_DRONE_WAVE, 0},
         {"CUT", F_CUTOFF, 0, 127, 70, 0, 0},
         {"RES", F_PCT, 0, 127, 24, 0, 0},
         {"DRV", F_PCT, 0, 127, 0, 0, 0},
@@ -123,6 +209,7 @@ static const engine_t ENG_DRONE = {
     .note_on = drone_note_on,
     .render = drone_render,
     .knob = {P_E0, P_E4, P_E1, P_E2},   /* DTN CUT SUB DRFT: step 1's DETUNE TONE SUB DRIFT */
-    .poly = 4,                          /* four saws a voice: 4 voices (16 saws) at most, the CPU of 8 ANALOG ones */
+    .poly = 4,                          /* four saws a voice (SUPER: seven): 4 voices at most */
+    .mem = DRONE_MEM,                   /* SUPER's phases (engines.c eng_mem: zeroed when another engine had it) */
     .keep = 0xF3,                       /* a retrigger keeps the filter, saw 4 and the sub, the walk, the breath */
 };

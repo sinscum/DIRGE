@@ -22,7 +22,7 @@ FUNCS = ["analog_render", "digital_render", "digital_render_legacy", "digital_re
          "dv_rim_run", "dv_bell_run", "dv_cym_run", "dv_out", "dv_metal_mix",
          "slicer_track",
          "slice_render", "slc_rev",                          # SLICE (eng_slice.c): the render, the reverse windows
-         "drone_render",                                     # DIRGE: DRONE (eng_drone.c)
+         "drone_render", "drone_super",                      # DIRGE: DRONE (eng_drone.c), its WAVE SUPER
          "tape_block",                                       # DIRGE: FX > TAPE (dirge/tape.c), while on
          "room_block",                                       # DIRGE: FX > TAPE ROOM (dirge/room.c), while on
          "fm1_alnk0_irq", "fm1_timer5_irq",               # the audio ISR; TIMER5: the key / LED scan (hal/fm1_input.h)
