@@ -164,7 +164,7 @@ static void phrase(track_t *t, uint32_t base)
 }
 
 /* ------------------------------------------------------------- jobs --- */
-enum { J_PRESET, J_MODE, J_SENDS, J_DRUMS, J_SONG, J_CPU, J_CHECK, J_SLICER };
+enum { J_PRESET, J_MODE, J_SENDS, J_DRUMS, J_SONG, J_CPU, J_CHECK, J_SLICER, J_DIRGE };
 typedef struct {
     char name[64];
     uint8_t kind, e, pi, arg, cpu_notes;
@@ -206,6 +206,24 @@ static void job_sends(const job_t *j)           /* arg: 0 dry, 1 chorus, 2 delay
     for (i = 0; i < 4u; i++)
         t->p[P_DIST + i] = S[j->arg][i];
     phrase(t, 60);
+}
+
+/* DIRGE's master effects: the "all" sends phrase (job_sends 4) of DRONE DIRGE with one of them on, so each has its
+ * renders and health checks. arg: 0 TAPE (dirge/tape.c) */
+static void job_dirge(const job_t *j)
+{
+    static const int16_t S[4] = {40, 80, 80, 80};
+    track_t *t = &trk[0];
+    uint32_t i;
+    host_tracks_init();
+    host_preset(t, j->e, j->pi);
+    t->p[P_AMODE] = 0;
+    for (i = 0; i < 4u; i++)
+        t->p[P_DIST + i] = S[i];
+    switch (j->arg) {
+    case 0: song.g[G_TAPE] = 100; break;
+    }
+    phrase(t, 48);
 }
 
 static void job_drums(const job_t *j)           /* every GM note through DRUM on part 4, a roll; arg: KIT (0: STD) */
@@ -385,6 +403,9 @@ static int run_job_body(job_t *j)
         break;
     case J_DRUMS:
         job_drums(j);
+        break;
+    case J_DIRGE:
+        job_dirge(j);
         break;
     case J_SONG:
         job_song(j);
@@ -1065,6 +1086,17 @@ int main(int argc, char **argv)
             j->pi = SEND_E[i][1];
             j->arg = (uint8_t)k0;
         }
+    {   /* DIRGE's master effects, on DRONE DIRGE (job_dirge) */
+        static const char *const DN[] = {"tape"};
+        for (k0 = 0; k0 < sizeof DN / sizeof DN[0]; k0++) {
+            job_t *j;
+            snprintf(name, sizeof name, "dirge/%s", DN[k0]);
+            j = add(J_DIRGE, name);
+            j->e = ENGI_DRONE;
+            j->pi = 0;
+            j->arg = (uint8_t)k0;
+        }
+    }
     add(J_SONG, "song/4track_mix");
     {   /* the SLICER */
         job_t *j = add(J_SLICER, "slicer/gate/ANALOG_ACID");

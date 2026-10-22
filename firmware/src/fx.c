@@ -227,6 +227,7 @@ static uint32_t div_samples(uint32_t div)
 }
 
 #include "perform.c"                                 /* the FX hold layer's effects (the master) */
+#include "dirge/tape.c"                              /* DIRGE: FX > TAPE, the master tape (mix_block) */
 #include "click.c"                                   /* the metronome's click (after the master: audio.c) */
 
 /* the delay's TIME (params.c N_DTIME): N_DIV's ten (div_samples), then 1.5.1's dotted 1/8D 1/16D 1/4D (10, 11, 12: 3/4,
@@ -1068,6 +1069,8 @@ static void mix_block(int32_t *out, uint32_t n)
     fx_buses(send_c, send_d, send_r, wet, n);
     if (hl.side)
         rev_side_mix(mix_l, mix_r, n);                  /* HALL: stereo */
+    if (song.g[G_TAPE] || tp.on)
+        tape_block(mix_l, mix_r, wet, n);               /* DIRGE: the tape over the mix (0: nothing touched) */
     if (scope_mix)
         scope_take_mix(n);
     if (perf) {

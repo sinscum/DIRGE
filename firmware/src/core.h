@@ -94,6 +94,10 @@ enum {                          /* global parameters */
                                  * the import of an old project reads them: proj_drums_to_part) */
     G_COUNT
 };
+/* DIRGE: its globals in ids no one uses (G_COUNT is fixed by the formats and the protocol): G_DRLVL and G_DRREV held 0
+ * (range 0..0) in every project since 1.0 (the import of an older one zeroes them after reading: project.c), G_ENGGO
+ * was never read. 0 = off: every project before DIRGE plays as it did */
+#define G_TAPE G_DRLVL           /* FX > TAPE: the master tape (dirge/tape.c) */
 
 /* stored parameters of an older layout -> today's P_* order. A store keeps np = the P_COUNT it was
  * written with; common parameters are only ever added just before P_E0, so the first np - 8 are
