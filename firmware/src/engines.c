@@ -196,3 +196,16 @@ static const struct {
 static const uint8_t TRK_DEF[NPART][3] = {{0, 4, 0}, {ENGI_FM6, 4, 0}, {3, 0, 0}, {ENGI_DRUM, 0, 0}}; /* ANALOG ACID,
                                                                        * FM6 PAD (was DIGITAL PAD), LOFI PULSE LD, DRUM KIT */
 static uint32_t trk_def_engine(uint32_t i) { return TRK_DEF[i % NPART][0]; }
+
+/* DIRGE: the power-on scenes (main.c felucca_init), as GHOULBOX's: MENU > SYSTEM > SCENE picks one, kept in the settings
+ * (favorites.c ui_scene: 0 in every older setting = DIRGE; an unknown value plays DIRGE). TRK_DEF stays Felucca's (an old
+ * project's missing parts, the tests' power-on): it is the scene FELUCCA. Append-only: the value is stored.
+ *   DIRGE    DRONE DIRGE, TRIO FAT BASS (PATTERNS[7], a low line), NOISE WIND, DRUM DEEP KIT; 90 BPM, HALL
+ *   FELUCCA  Felucca's own power-on (ANALOG ACID, FM6 PAD, LOFI PULSE LD, DRUM KIT; 120 BPM)
+ *   BLANK    DIRGE's sounds, no notes */
+static const uint8_t DS_DIRGE[NPART][3] = {{ENGI_DRONE, 0, 0}, {6, 0, 8}, {11, 0, 0}, {ENGI_DRUM, 1, 0}};
+static const uint8_t DS_BLANK[NPART][3] = {{ENGI_DRONE, 0, 0}, {6, 0, 0}, {11, 0, 0}, {ENGI_DRUM, 1, 0}};
+#define DS_N 3u
+static const struct { const char *name; uint8_t bpm; const uint8_t (*part)[3]; } DIRGE_SCENES[DS_N] = {
+    {"DIRGE", 90, DS_DIRGE}, {"FELUCCA", 0, TRK_DEF}, {"BLANK", 90, DS_BLANK},   /* (bpm 0: GP's default) */
+};

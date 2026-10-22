@@ -10,6 +10,8 @@ static favorites_t favorites __attribute__((section(".pool")));
 /* DIRGE: the engines with a row of favourites. Rows 14 and 15 hold MIDI LEARN's map and the palette (midi_learn.c,
  * below): DIRGE's engines (14 on) have none until the settings grow a row for them */
 #define FAV_ROWS 14u
+/* DIRGE: MENU > SYSTEM > SCENE (engines.c DIRGE_SCENES), a byte no engine uses (settings_persist.c's list: [15][13]) */
+#define ui_scene (favorites.factory[15][13])
 static int favorite_has(uint32_t engine, uint32_t preset)
 {
     if (engine == NENGINES)

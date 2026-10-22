@@ -98,10 +98,12 @@ static void fm1_fault(const fm1_crash_t *c)
     fm1_reboot();
 }
 
-/* power-on: the parts with their default sounds (TRK_DEF); the sequencers empty */
+/* power-on: the parts with their default sounds, the scene's (DIRGE: engines.c DIRGE_SCENES, MENU > SYSTEM > SCENE;
+ * settings_init ran before; FELUCCA's is TRK_DEF); the sequencers empty but for the scene's patterns */
 static void felucca_init(void)
 {
-    uint32_t i;
+    uint32_t i, sc = ui_scene < DS_N ? ui_scene : 0u;
+    const uint8_t (*def)[3] = DIRGE_SCENES[sc].part;
     chain_defaults(&chain_config);
     for (i = 0; i < G_COUNT; i++)
         song.g[i] = GP[i].def;
@@ -110,17 +112,19 @@ static void felucca_init(void)
     for (i = 0; i < NTRK; i++) {
         track_t *t = &trk[i];
         track_defaults(t);
-        set_engine_of(t, TRK_DEF[i][0]);
-        apply_preset_to(t, TRK_DEF[i][1]);    /* with its sends */
+        set_engine_of(t, def[i % NPART][0]);
+        apply_preset_to(t, def[i % NPART][1]);   /* with its sends */
         t->engine = t->eng_req;
         eng_mem_claim(t);                     /* (zeros already: no note can come before) */
         track_defaults_steps(t);              /* (a sound load never touches them) */
-        if (TRK_DEF[i][2])
-            load_pat16(t, PATTERNS[TRK_DEF[i][2] - 1u].note, PATTERNS[TRK_DEF[i][2] - 1u].flags);
+        if (def[i % NPART][2])
+            load_pat16(t, PATTERNS[def[i % NPART][2] - 1u].note, PATTERNS[def[i % NPART][2] - 1u].flags);
         pat_sig[i] = steps_sig(t);            /* a default pattern, not the user's */
-        pat_last[i] = TRK_DEF[i][2];
+        pat_last[i] = def[i % NPART][2];
     }
     undo_depth--;
+    if (DIRGE_SCENES[sc].bpm)
+        song.g[G_BPM] = DIRGE_SCENES[sc].bpm;
     song.sel = 0;
     song.master_q12 = 2048;                   /* (the pot's level replaces it before the audio starts: master_boot) */
     ui.home = 1;
