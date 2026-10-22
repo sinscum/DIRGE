@@ -1689,7 +1689,7 @@ function makeMockDevice(opt = {}) {
     E("ENG", ["ANALOG", "-", "PHASE", "LOFI", "SAMPLE", "VOICE", "TRIO", "WHEEL",
       "GRAIN", "PHYS", "DRUM", "NOISE", "FM6", "SLICE", "DRONE"], 0), E("SET", NGO, 0),
     E("CLRSQ", NGO, 0), E("INIT", NGO, 0),
-    E("TYPE", ["ROOM", "SPRING", "HALL"], 2),       /* G_RTYPE (id 24, was G_DRCH): the reverb's model (HALL: 1.2) */
+    E("TYPE", ["ROOM", "SPRING", "HALL", "VAULT"], 2),   /* (DIRGE: VAULT) */       /* G_RTYPE (id 24, was G_DRCH): the reverb's model (HALL: 1.2) */
     D("TAPE", F.PCT, 0, 127, 0), D("-", F.INT, 0, 0, 0),   /* G_DRLVL: DIRGE's TAPE (G_TAPE); G_DRREV: inert since 1.0 */
   ];
   const NONE = D("-", F.INT, 0, 0, 0);

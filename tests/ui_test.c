@@ -3239,8 +3239,8 @@ static int test_layer(void)
     turn(EN_K1, 1);
     ok &= song.g[G_RTYPE] == 1 && str_eq(GP[G_RTYPE].names[song.g[G_RTYPE]], "SPRING");
     turn(EN_K1, 5);
-    ok &= song.g[G_RTYPE] == 2;
-    turn(EN_K1, -1);
+    ok &= song.g[G_RTYPE] == 3 && str_eq(GP[G_RTYPE].names[3], "VAULT");   /* (DIRGE: VAULT the last) */
+    turn(EN_K1, -2);
     ok &= song.g[G_RTYPE] == 1;
     song.playing = 0;
     project_save(2);

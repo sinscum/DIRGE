@@ -208,8 +208,65 @@ static void job_sends(const job_t *j)           /* arg: 0 dry, 1 chorus, 2 delay
     phrase(t, 60);
 }
 
+/* phrase, its tail then held 3 s before SIZE 30 lets it go (DIRGE's VAULT: a tail of up to INF would never end) */
+static void phrase_hold(track_t *t, uint32_t base)
+{
+    static const uint8_t CH[5] = {0, 7, 12, 16, 19};
+    uint32_t i;
+    input_on(t, base, 100);
+    run_to(at(0.30));
+    input_off(t, base);
+    for (i = 0; i < 5u; i++)
+        input_on(t, base - 12u + CH[i], 90 + 5 * i);
+    run_to(at(1.20));
+    for (i = 0; i < 5u; i++)
+        input_off(t, base - 12u + CH[i]);
+    run_to(at(4.20));
+    song.g[G_RSIZE] = 30;
+    rel_at = fpos;
+    dc_end = fpos + FS / 2u;
+    finish();
+}
+
+/* DIRGE: VAULT holds. DRONE into VAULT, the notes let go: the tank's energy (the sum of its lines) 0.5 s and 4 s after.
+ * INF keeps at least half of it and gains no more than double (no run-away); SIZE 60 (~3 s) has lost most of it */
+static uint64_t vault_energy(void)
+{
+    uint64_t e = 0;
+    uint32_t i;
+    for (i = 0; i < sizeof rev_comb / sizeof rev_comb[0]; i++)
+        e += (uint64_t)(rev_comb[i] < 0 ? -rev_comb[i] : rev_comb[i]);
+    return e;
+}
+static int chk_vault(char *msg, uint32_t n)
+{
+    static const int16_t SZ[2] = {127, 60};
+    uint64_t e0[2], e1[2];
+    uint32_t k, i;
+    for (k = 0; k < 2u; k++) {
+        track_t *t = &trk[0];
+        host_tracks_init();
+        host_preset(t, ENGI_DRONE, 0);
+        t->p[P_REV] = 110;
+        song.g[G_RTYPE] = 3;
+        song.g[G_RSIZE] = SZ[k];
+        for (i = 0; i < 3u; i++)
+            input_on(t, 48u + 7u * i, 110);
+        run_to(fpos + FS);
+        for (i = 0; i < 3u; i++)
+            input_off(t, 48u + 7u * i);
+        run_to(fpos + FS / 2u);
+        e0[k] = vault_energy();
+        run_to(fpos + FS * 7u / 2u);
+        e1[k] = vault_energy();
+    }
+    snprintf(msg, n, "INF %llu -> %llu, SIZE 60 %llu -> %llu", (unsigned long long)e0[0], (unsigned long long)e1[0],
+             (unsigned long long)e0[1], (unsigned long long)e1[1]);
+    return e0[0] > 1000u && e1[0] * 2u >= e0[0] && e1[0] <= e0[0] * 2u && e1[1] * 4u < e0[1];
+}
+
 /* DIRGE's master effects: the "all" sends phrase (job_sends 4) of DRONE DIRGE with one of them on, so each has its
- * renders and health checks. arg: 0 TAPE (dirge/tape.c) */
+ * renders and health checks. arg: 0 TAPE (dirge/tape.c), 1 VAULT 32 s, 2 VAULT INF then let go to 90 (fx.c) */
 static void job_dirge(const job_t *j)
 {
     static const int16_t S[4] = {40, 80, 80, 80};
@@ -222,6 +279,12 @@ static void job_dirge(const job_t *j)
         t->p[P_DIST + i] = S[i];
     switch (j->arg) {
     case 0: song.g[G_TAPE] = 100; break;
+    case 1: song.g[G_RTYPE] = 3; song.g[G_RSIZE] = 126; break;
+    case 2: song.g[G_RTYPE] = 3; song.g[G_RSIZE] = 127; break;
+    }
+    if (j->arg >= 1u) {                        /* VAULT: the tail held 3 s, then SIZE 30 lets it die away */
+        phrase_hold(t, 48);
+        return;
     }
     phrase(t, 48);
 }
@@ -1087,7 +1150,7 @@ int main(int argc, char **argv)
             j->arg = (uint8_t)k0;
         }
     {   /* DIRGE's master effects, on DRONE DIRGE (job_dirge) */
-        static const char *const DN[] = {"tape"};
+        static const char *const DN[] = {"tape", "vault", "vault_inf"};
         for (k0 = 0; k0 < sizeof DN / sizeof DN[0]; k0++) {
             job_t *j;
             snprintf(name, sizeof name, "dirge/%s", DN[k0]);
@@ -1128,6 +1191,7 @@ int main(int argc, char **argv)
     add(J_CHECK, "voices: UNISON keeps its note")->check = chk_keep_unison;
     add(J_CHECK, "voices: VOICE engine cap")->check = chk_voice_cap;
     add(J_CHECK, "routing: no hanging notes")->check = chk_hang;
+    add(J_CHECK, "dirge: VAULT holds at INF, lets go below it")->check = chk_vault;
     run_jobs(J, nj, jobs_at_once);
 
     /* 3: CPU, one child at a time (the ns are for information; the instruction counts do not care) */

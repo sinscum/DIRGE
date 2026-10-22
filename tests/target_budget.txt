@@ -57,7 +57,7 @@ perf_phaser 448
 perf_throw 52
 rev_room 218
 rev_spring 126
-rev_hall 1995
+rev_hall 2152
 rev_side_mix 9
 track_insert 3
 ins_drive 277

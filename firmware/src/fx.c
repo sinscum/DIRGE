@@ -331,14 +331,28 @@ static uint32_t exp2_neg(uint32_t x)
 /* the lines' gains for SIZE s: RT60 = 0.5 s * 2^(s / 30); a line of D samples (22.05 kHz) loses 60 dB in
  * RT60 * 22050 / D passes: g = 2^(-D * 3 log2(10) / (22050 * RT60)) = 2^(-D * 59.2 / 65536 * 2^(-s / 30)),
  * at most 0.99, over sqrt(7) (the matrix's rows have 7 entries of +-1: / sqrt(7) makes it orthogonal) */
+/* DIRGE: VAULT (REVERB TYPE 3, after GR!MM's SPACE: jasonpersinger's sibling GRiMMBIENT/grimm hall.c, GPL-3.0) is this
+ * HALL with a longer reach: RT60 = 0.4 s * 2^(s / 20) (0.4 .. ~32 s), the gains up to 0.998, and SIZE 127 = INF: the
+ * lines lossless but for the rounding of 1 / sqrt(7), the damping off and the send faded out (~0.25 s), so the tank
+ * holds what is in it, a freeze; a soft knee on what goes back into the lines (rev_hall), so a loop that keeps its energy
+ * cannot run away. HALL itself is as it was (hl_vault 0: the same steps, bit for bit) */
+static uint8_t hl_vault;                 /* rev_hall's model: 0 HALL, 1 VAULT (fx_buses, rev_switch) */
+static int32_t hl_vsend = 32767;         /* VAULT's send (Q15): 0 at INF, glides */
+#define HL_INF 127
 static __attribute__((noinline)) void hall_gains(int32_t s)
 {
-    uint32_t q = exp2_neg((uint32_t)s * 65536u / 30u), k, g;
+    uint32_t q = exp2_neg((uint32_t)s * 65536u / (hl_vault ? 20u : 30u)), k, g;
     for (k = 0; k < HL_NL; k++) {
-        g = exp2_neg((HL_LEN[k] * 59u * q) >> 15);
-        hl.g[k] = (int16_t)(((g > 32440u ? 32440u : g) * 6193u) >> 15);
+        if (hl_vault && s >= HL_INF)
+            g = 32767u;                                 /* (INF: lossless but for the rounding) */
+        else {
+            uint32_t cap = hl_vault ? 32700u : 32440u;  /* (74: 59 x 0.5 / 0.4) */
+            g = exp2_neg((HL_LEN[k] * (hl_vault ? 74u : 59u) * q) >> 15);
+            g = g > cap ? cap : g;
+        }
+        hl.g[k] = (int16_t)((g * 6193u) >> 15);
     }
-    hl.sz = (int16_t)(s + 1);
+    hl.sz = (int16_t)(s + 1 + (hl_vault ? 256 : 0));
 }
 
 /* an allpass diffuser over x[0 .. n) from q (its next samples, no wrap): its state rounded towards zero */
@@ -406,14 +420,23 @@ static __attribute__((noinline)) void rev_hall(const int32_t *rev_in, int32_t *o
     int16_t *b = rev_comb, *a = rev_ap;
     uint32_t i, k, s, m, d;
     int32_t kd = HL_KD(song.g[G_RDAMP]);
-    int32_t xp = hl.x, hp = hl.hp, he = hl.he, mp = hl.m, sp = hl.s;
+    int32_t xp = hl.x, hp = hl.hp, he = hl.he, mp = hl.m, sp = hl.s, vs = hl_vsend;
     (void)n;
-    if (hl.sz != song.g[G_RSIZE] + 1)
+    if (hl.sz != song.g[G_RSIZE] + 1 + (hl_vault ? 256 : 0))
         hall_gains(song.g[G_RSIZE]);
+    if (hl_vault) {                                     /* DIRGE: VAULT's INF, the send faded, no damping */
+        int32_t inf = song.g[G_RSIZE] >= HL_INF;
+        if (inf)
+            kd = 32767;
+        vs = inf ? (vs > 96 ? vs - 96 : 0) : (vs < 32767 - 96 ? vs + 96 : 32767);
+        hl_vsend = vs;
+    }
     for (i = 0; i < HL_NC; i++) {
         int32_t x = (xp + 2 * rev_in[2u * i] + rev_in[2u * i + 1u]) >> 2, v;   /* every other sample, 1 2 1 */
         xp = rev_in[2u * i + 1u];
         x = mulq15(clamp(x, -262143, 262143), 2580);    /* (ROOM's level) */
+        if (hl_vault)
+            x = mulq15(x, vs);                          /* (DIRGE: VAULT's send, 0 at INF) */
         v = x - hp + he;                                /* the low cut, its step's remainder kept */
         he = v & 31;
         hp += v >> 5;
@@ -468,6 +491,9 @@ static __attribute__((noinline)) void rev_hall(const int32_t *rev_in, int32_t *o
         hl.y[5][i] = (int16_t)clamp(2 * p4 + y5 - y0 + x, -32768, 32767);
         hl.y[6][i] = (int16_t)clamp(2 * p5 + y6 - y0 + x, -32768, 32767);
         hl.y[7][i] = (int16_t)clamp(2 * p6 + y7 - y0 - x, -32768, 32767);
+        if (hl_vault)                                   /* DIRGE: VAULT's soft knee on what goes back into the lines */
+            for (k = 0; k < HL_NL; k++)
+                hl.y[k][i] = (int16_t)soft_knee(hl.y[k][i], 24000);
     }
     b = rev_comb;
     for (k = 0; k < HL_NL; k++) {                       /* back into the lines (and the mirror after a wrap) */
@@ -503,6 +529,7 @@ static void rev_clear(void)
         hl.lp[i] = hl.le[i] = 0;
     fx.sp_lp = fx.sp_hp = fx.sp_he = 0;
     hl.x = hl.m = hl.s = hl.hp = hl.he = 0;
+    hl_vsend = 32767;                                   /* (DIRGE: VAULT starts with its send open) */
 }
 
 #if FELUCCA_CPU2
@@ -541,8 +568,10 @@ static __attribute__((noinline)) void rev_switch(const int32_t *rev_in, int32_t 
     uint32_t i;
     for (i = 0; i < n; i++)
         t[i] = 0;
-    if (fx.rtype == 2u)
+    if (fx.rtype >= 2u) {
+        hl_vault = fx.rtype == 3u;                      /* (DIRGE: VAULT is HALL's code) */
         rev_hall(rev_in, t, n);
+    }
     else if (fx.rtype)
         rev_spring(rev_in, t, n);
     else
@@ -590,12 +619,14 @@ static void fx_buses(const int32_t *cho_in, const int32_t *dly_in, const int32_t
         wet[i] = y;
     }
     rt = song.g[G_RTYPE];
-    rt = rt == 1 || rt == 2 ? rt : 0;
+    rt = rt == 1 || rt == 2 || rt == 3 ? rt : 0;        /* (DIRGE: 3 VAULT) */
     hl.side = 0;
     if (rt != fx.rtype)
         rev_switch(rev_in, wet, n, rt);
-    else if (rt == 2)
+    else if (rt >= 2) {
+        hl_vault = rt == 3;
         rev_hall(rev_in, wet, n);
+    }
     else if (rt)
         rev_spring(rev_in, wet, n);
     else

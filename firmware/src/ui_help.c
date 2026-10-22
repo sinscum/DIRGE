@@ -25,7 +25,7 @@ static const struct { const char *title, *hint; } HELP_PAGE[] = {
     {"INSERT", "[K1]TYPE[FX]DRY / WET"},
     {"INSERT 2", "[K1]DRY / WET[FX]DLY"},
     {"DLY", "[K1-4]ALL TRACKS[FX]REVERB"},
-    {"REVERB", "[K1]ROOM SPRING HALL[FX]CHORUS"},
+    {"REVERB", "[K1]4 TYPES[FX]CHORUS"},                /* (DIRGE: + VAULT) */
     {"CHORUS", "[K1-4]ALL TRACKS[FX]TAPE"},
     {"TAPE", "[K1]WOW HISS AGE[FX]FX"},                 /* DIRGE */
     {"SCL", "[K2]SCALE[K3]QUANTIZE[SCL]CHORDS"},
