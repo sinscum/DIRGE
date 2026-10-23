@@ -62,8 +62,8 @@ DIRGE is a fork of Felucca 1.6.1, GPL-3.0-only as a whole. Copyright (C) 2026 DI
 | `firmware/src/dirge/tape.c` (TAPE: GHOULBOX's `tape.c`, GPL-3.0, itself on Felucca's code) and `room.c` (ROOM: after GHOULBOX's `ambience.c`, GPL-3.0) | GPL-3.0-only |
 | `tests/dirge/` (DIRGE's DSP tests) | GPL-3.0-only |
 | `web/emu/scope.js` and the room around the emulator in `web/emu/index.html` (the page itself is Felucca's, after X0X's) | GPL-3.0-only |
-| DIRGE's changes to Felucca's files (marked `DIRGE`): the identity and name, the engine table, the EDIT layer, the favourites' rows, the power-on scenes, the FX > TAPE page and REVERB VAULT, WEAR, the dark scales, KEYS LAYER / SPLIT, the tests' identity checks, the site's names | GPL-3.0-only |
-| `.github/workflows/ci.yml`, `README.md`, `CLAUDE.md` | GPL-3.0-only |
+| DIRGE's changes to Felucca's files (marked `DIRGE`): the identity and name, the engine table, the EDIT layer, the favourites' rows, the power-on scenes, the FX > TAPE page and REVERB VAULT, WEAR, the dark scales, KEYS LAYER / SPLIT, the tests' identity checks, the site's, installer's and editor's names | GPL-3.0-only |
+| `.github/` (CI, issue templates), `README.md`, `MANUAL.md` (its shape after GR!MM's manual), `CONTRIBUTING.md`, `CLAUDE.md`, `docs/MERGE_PLAN.md` | GPL-3.0-only |
 
 `sdk/ac79/` holds the three JieLi SDK files the package needs (below), unchanged, so a build needs no SDK checkout:
 Apache-2.0, `LICENSES/Apache-2.0.txt`.

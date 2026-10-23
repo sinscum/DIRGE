@@ -26,7 +26,13 @@ added, so several "port" rows are already done:
 - **AUTOMATION** (SEQ > AUTOMATION, motion locks) and **MIXER** pages are in DIRGE.
 - **Undo**: DIRGE has a one-step undo (hold SAVE); Skiff keeps 8 levels across the tracks (`ui.c`). That one is a
   real port.
-- **DIST** exists in DIRGE as one soft clip. Skiff adds the kinds and a tone (below): a small, contained port.
+- **Distortion** is mostly there: FX's DIST is one soft clip, but the per-track **INSERT** (FX > INSERT, Felucca 1.5)
+  already has SOFT, HARD, FOLD, FUZZ and CRUSH (bits and rate), plus PHASR, FLANG and CHOR, with a MIX. Skiff's DRIVE
+  kinds would add HARD / FOLD / BITS to DIST itself, which matters only if a track needs an INSERT and a second
+  distortion at once.
+- **One-key chords** are there: SCL > CHORD (DIA3, DIA7, MAJ .. POW; 5 voicings) makes every key play a chord. What
+  GR!MM adds is the gesture (hold SEL), not the feature.
+- **Latch** is there for arpeggios: ARP 2 > HOLD.
 - **Themes**: DIRGE already has BLOOD / CRYPT / NEON palettes.
 
 What is genuinely Skiff-only:
@@ -66,21 +72,21 @@ not cherry-picks.
 
 ## Revised port order
 
-Small, self-contained wins first; the structural changes after a design note each.
+Small, self-contained wins first; the structural changes after a design note each. (Updated after the docs pass
+found INSERT's distortions and the chord keys already in DIRGE.)
 
-1. **DRIVE kinds + TONE** (Skiff `fx.c`): SOFT stays the default, so every existing sound renders bit for bit. Two
-   parameters before P_E0, the FX > DRIVE page, the web editor's parameter list.
-2. **DUCK** (`duck.c`): off by default, bit for bit when off.
-3. **Preset tags / LIST** and the **ENV 2** page, if wanted after trying Skiff's.
-4. **8-level undo and TAKE** (`ui.c`, `take.c`): CPU-check the ISR note log against `tests/target_budget.txt`.
-5. **Voice budget 12 on two cores** (Skiff 1.3's VOICE_BUDGET), before any track-count change.
-6. **Design note, then build**: six tracks + the RAM / POOL split + a new project format. CPU-test DRONE + VAULT +
+1. **DUCK** (`duck.c`): off by default, bit for bit when off.
+2. **Preset tags / LIST** and the **ENV 2** page, if wanted after trying Skiff's.
+3. **8-level undo and TAKE** (`ui.c`, `take.c`): CPU-check the ISR note log against `tests/target_budget.txt`.
+4. **Voice budget 12 on two cores** (Skiff 1.3's VOICE_BUDGET), before any track-count change.
+5. **Design note, then build**: six tracks + the RAM / POOL split + a new project format. CPU-test DRONE + VAULT +
    TAPE with six tracks running.
-7. **Design note, then build**: the pattern pool, per-track lists and scenes, with a DIRGE flash layout.
-8. GR!MM-inspired UI: HOME with direct access to parameters (Skiff's HOME as the landing page), GRAIN as a send with
-   FREEZE, one-key chords (hold SEL), a per-track drone latch.
-9. DRUM-X as engine 15 (optional).
-10. Plague-doctor theme.
+6. **Design note, then build**: the pattern pool, per-track lists and scenes, with a DIRGE flash layout.
+7. GR!MM-inspired UI: HOME with direct access to parameters (Skiff's HOME as the landing page), GRAIN as a send with
+   FREEZE, a quicker gesture for the existing chord keys, a per-track note latch (beyond ARP HOLD).
+8. DRUM-X as engine 15 (optional).
+9. Plague-doctor theme.
+10. Skiff's DRIVE kinds on DIST, only if INSERT's distortions are not enough in practice.
 
 Each step: `tests/run_tests.sh` green (goldens unchanged unless the sound was meant to change), and a J_DIRGE render
 where it makes sound.
@@ -93,29 +99,29 @@ work
 | Area | DIRGE today | Skiff | GR!MM | Action |
 | --- | --- | --- | --- | --- |
 | Home screen | Felucca home | HOME landing page, all 6 tracks | direct access to parameters, doubles as mixer | **Design** (step 8) |
-| Tracks / voices | 4 tracks, 8 shared voices | 6 tracks (T5 / T6 light), 8 voices, 12 on two cores | 4 tracks, 6 voices | **Port** the 12-voice budget (5); six tracks after a design note (6) |
+| Tracks / voices | 4 tracks, 8 shared voices | 6 tracks (T5 / T6 light), 8 voices, 12 on two cores | 4 tracks, 6 voices | **Port** the 12-voice budget (4); six tracks after a design note (5) |
 | Tape FX | TAPE, ROOM, WEAR | — | TAPE | **Have** |
 | Long reverb | VAULT ~32 s + INF | ROOM, SPRING, stereo HALL | SPACE ~32 s + INF | **Have** |
 | Delay | Felucca delay + WEAR | delay send | tape echo | **Have** |
-| Grain | GRAIN engine | GRAIN engine | GRAIN send with FREEZE | **Design** (8) |
-| Distortion | DIST: one soft clip | DRIVE: SOFT HARD FOLD BITS + TONE | — | **Port** (1) |
+| Grain | GRAIN engine | GRAIN engine | GRAIN send with FREEZE | **Design** (7) |
+| Distortion | DIST (soft clip) + INSERT: SOFT HARD FOLD FUZZ CRUSH | DRIVE: SOFT HARD FOLD BITS + TONE | — | **Have**; DRIVE kinds optional (10) |
 | Slicer | SLICER | SLICER (same code) | — | **Have** |
-| Sidechain | — | DUCK | — | **Port** (2) |
+| Sidechain | — | DUCK | — | **Port** (1) |
 | Scales | Felucca's + PHDOM HUNG DHARM | 16 scales | scale snapping | **Have** |
-| Envelope | ENV, ENV DEST, ENV SYNC | + ENV 2, a graph | envelope | **Have**; ENV 2 optional (3) |
+| Envelope | ENV, ENV DEST, ENV SYNC | + ENV 2, a graph | envelope | **Have**; ENV 2 optional (2) |
 | LFO | LFO, LFO 2, LFO DEST, MOD | the same four | per-track LFO | **Have** |
 | Mixer (GLO) | GLO layer (mute / solo), MIXER page | fuller GLO: FILL, tap tempo | song mode | compare on the unit, then port what is missing |
 | Arp | 14 modes, CHANCE, SWING, HOLD | the same | arp + latch | **Have** |
-| Chords | chord keys + KEYS LAYER / SPLIT | 9 chords, 5 voicings | one-key chords | **Design** (8) |
-| Drone latch | DRONE engine | ARP HOLD | latch | **Design** (8) |
-| Sequencer pages | STEP, DETAIL, AUTOMATION, SONG | + ROLL, CHANCE, PLAY, PATTERN | pattern screen | **Port** pages with the pool (7) |
+| Chords | SCL > CHORD one-key chords (9 + OFF, 5 voicings) + KEYS LAYER / SPLIT | 9 chords, 5 voicings | one-key chords (hold SEL) | **Have**; GR!MM's gesture (7) |
+| Drone latch | ARP HOLD | ARP HOLD | latch | **Have** for the arp; a note latch (7) |
+| Sequencer pages | STEP, DETAIL, AUTOMATION, SONG | + ROLL, CHANCE, PLAY, PATTERN | pattern screen | **Port** pages with the pool (6) |
 | Automation | SEQ > AUTOMATION | the same | — | **Have** |
-| Song mode | Felucca song chain | 64-pattern pool, lists A..P, scenes | slots A..D | **Port** after a design note (7) |
-| Performance | PERFORM (FX layer, throws) | PERFORM, 16 scenes | freeze, throws, tape stop, stutter | **Have**; scenes come with the pool (7) |
-| Undo / TAKE | one-step undo | 8-level undo, TAKE | — | **Port** both (4) |
+| Song mode | Felucca song chain | 64-pattern pool, lists A..P, scenes | slots A..D | **Port** after a design note (6) |
+| Performance | PERFORM (FX layer, throws) | PERFORM, 16 scenes | freeze, throws, tape stop, stutter | **Have**; scenes come with the pool (6) |
+| Undo / TAKE | one-step undo | 8-level undo, TAKE | — | **Port** both (3) |
 | Noise | NOISE engine + DIRGE noise DSP | NOISE engine | — | **Have** (the same Felucca-Engines NOISE) |
-| Drums | DRUM | DRUM + DRUM-X | — | optional **Port** as engine 15 (9) |
-| Themes | BLOOD CRYPT NEON | SKIFF HI-CON PAPER CRYPT NEON QUARK | pixel-brutalist | **Build** plague doctor (10) |
+| Drums | DRUM | DRUM + DRUM-X | — | optional **Port** as engine 15 (8) |
+| Themes | BLOOD CRYPT NEON | SKIFF HI-CON PAPER CRYPT NEON QUARK | pixel-brutalist | **Build** plague doctor (9) |
 | Web editor / emulator | yes | yes | yes | **Have** |
 
 ## Open questions
@@ -124,8 +130,8 @@ work
       and a CPU / memory test before code.)
 - [ ] Pattern pool: where does it go in flash, and how many patterns fit beside DIRGE's store, autosave and FM6 bank?
 - [ ] Project format: a new DIRGE format with FUN10 import (proposed), or reading Skiff's SKF2 too?
-- [x] Skiff DIST vs DIRGE's own dist / fold / crush: port Skiff's DRIVE (it already has FOLD and BITS); extend it in
-      `firmware/src/dirge/` only if more is wanted.
+- [x] Skiff DIST vs DIRGE's own dist / fold / crush: neither is needed first; INSERT already has HARD, FOLD, FUZZ
+      and CRUSH. Skiff's DRIVE kinds stay optional (10).
 - [x] Skiff NOISE vs DIRGE noise: the same Felucca-Engines engine; DIRGE's noise DSP is a separate layer. Keep both.
 - [ ] Mixer controls on both HOME and GLO: pick one home for each control.
 - [ ] Final firmware name before the first public release.

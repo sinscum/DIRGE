@@ -1,11 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Feature idea or request
-    url: https://github.com/hugelton/Felucca/discussions/categories/ideas
-    about: Ideas and requests go to Discussions (no promise they will be added).
-  - name: Question
-    url: https://github.com/hugelton/Felucca/discussions/categories/q-a
-    about: How to use Felucca, or how something works.
-  - name: Web editor or installer
-    url: https://github.com/hugelton/Felucca-WebApp
-    about: The web editor and installer live in Felucca-WebApp.
+  - name: The manual
+    url: https://github.com/sinscum/DIRGE/blob/main/MANUAL.md
+    about: How to use DIRGE, every page and combo.
+  - name: Felucca-Engines (ANALOG, LOFI, TRIO, WHEEL, NOISE)
+    url: https://github.com/hugelton/Felucca-Engines/issues
+    about: A bug in one of these engines that Felucca has too belongs upstream.

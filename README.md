@@ -2,63 +2,131 @@
 
 [![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-blue.svg)](LICENSE)
 
-**Darksynth, noise and drone firmware for the M-VAVE FM-1**, built on [Felucca](https://github.com/hugelton/Felucca)
-1.6.1 by Leo Kuroshita, Hügelton Instruments. DIRGE keeps everything Felucca is (the engines, the voices with MONO,
-LEGATO, UNISON and glide, the sequencer and song chain, the modulation matrix, MIDI clock in over USB and TRS, the
-effects, the projects and presets, the web editor and installer) and adds its own engines and effects for the noise
-and darksynth corner that other FM-1 firmwares leave open.
+**Darksynth, noise and drone firmware for the M-VAVE FM-1.**
 
-Try it in your browser, install it and edit it from Chrome or Edge: <https://sinscum.github.io/DIRGE/>
-(the installer: `webapp/installer/`, the editor: `webapp/editor/`). Installing is at your own risk; the installer's
-**Return to official V15** takes you back.
+**[Try it in your browser](https://sinscum.github.io/DIRGE/)** (the real firmware, no FM-1 needed) ·
+**[Install it](https://sinscum.github.io/DIRGE/webapp/installer/)** ·
+**[Open the editor](https://sinscum.github.io/DIRGE/webapp/editor/)** (edit sounds live, load samples, back up your
+FM-1) · **[Read the manual](MANUAL.md)**
 
-## What DIRGE adds
+DIRGE turns the FM-1 into a four-track instrument for drones, aggressive mono basses, noise and gritty sequences:
+fourteen engines, a 64-step sequencer per track with chords, ratchets, conditions and parameter locks, an arpeggiator,
+a song chain, a performance layer, MIDI clock in for an Elektron rig, and long, worn, dark effects over all of it.
 
-- **Power-on scenes** (MENU > SYSTEM > SCENE): **DIRGE** by default (DRONE on T1, TRIO's FAT BASS with a pattern on T2,
-  NOISE's WIND on T3, DRUM's DEEP KIT on T4; 90 BPM), **FELUCCA** (Felucca's own power-on) or **BLANK**.
-- **DRONE** (`firmware/src/eng_drone.c`), first in the PRESETS engine list: polyBLEP saws pushed apart by DTN and
-  pulled about by DRFT (one slow random walk, each saw following it its own way), a sine SUB, BRTH (noise), DRV
-  (tanh) and a rounded resonant low-pass. WAVE: **DRONE** (two saws at the note, two an octave down), **HIGH** (the
-  upper pair alone) or **SUPER** (seven saws at the JP-8000 supersaw's offsets, DTN their spread). HOME's knobs: DTN,
-  CUT, SUB, DRFT. Presets DIRGE, BLACK MASS, SHIVER, FURNACE, ASH WIND, GRAVEWAVE (a supersaw pad) and NEON TOMB (a
-  mono darksynth lead). Up to 4 voices.
-- **FX > TAPE**, a page of three knobs, all off by default:
-  - **TAPE**: the whole mix through a worn cassette (wow, flutter, saturation, a high cut, hiss that follows the music).
-  - **ROOM**: a dead channel's room tone under the mix (static, 50 Hz hum, crackle), into the reverb too.
-  - **WEAR**: the delay worn into a tape echo (wow and flutter on its read, darker and saturated repeats).
-- **REVERB TYPE VAULT**: HALL stretched to ~32 s, and at SIZE 127 **INF**, a freeze that holds what is in it.
-- **Dark scales**: PHDOM (Phrygian dominant), HUNG (Hungarian minor), DHARM (double harmonic).
-- **KEYS LAYER / SPLIT** (MENU > AUDIO > KEYS, SPLIT; saved with the project): LAYER plays the selected track and a
-  second one from every key; SPLIT plays a second track from the keys under the split point (C4 by default).
-- **DIRGE's DSP** (`firmware/src/dirge/`), beside Felucca-Engines' `dsp.c`: the rounded SVF low-pass (no DC creeping
-  into a long low drone), white, pink, brown, crackle and shift-register noise, the tape and the room tone.
-- **The look**: three palettes, **BLOOD** (the default: black, bone and blood red, a ghost-cyan cursor), **CRYPT**
-  (grave violet, toxic green) and **NEON** (an 80s horror poster's magenta and cyan) in MENU > DISPLAY > COLOR, and a
-  splash framed like a coffin lid. Felucca's palettes are all still there.
-- **The site**: the emulator in DIRGE's dead-channel room, with a live oscilloscope of its output.
+It is built on [Felucca](https://github.com/hugelton/Felucca) 1.6.1 by Leo Kuroshita, Hügelton Instruments, and keeps
+everything Felucca is. DIRGE adds the engines, effects, scales and look for the noise and darksynth corner other FM-1
+firmwares leave open.
 
-TAPE, ROOM and WEAR use three global ids that Felucca's projects never set (the old GM drum part's level and reverb,
-and an unused editor id), so every Felucca project opens with them off and plays as it did. KEYS uses two spare bytes
-of Felucca's project format; a project without it is byte for byte what Felucca writes.
+Free and open source (GPL-3.0-only). Unofficial firmware, not made or endorsed by M-VAVE or Hügelton Instruments.
+**Install at your own risk.**
 
-Next: distortion, fold and crush; chaos and feedback oscillators; a mono darksynth bass engine; slow random
-modulation. See [CLAUDE.md](CLAUDE.md) for the plan and the chip's rules.
+---
 
-## Build
+## What's inside
 
-Linux x86-64 (or Docker on macOS: see [BUILDING.md](BUILDING.md), Felucca's guide, which applies as it is). The
-JieLi toolchain and Python 3 with Pillow (with libraqm) and fontTools; the three JieLi SDK files are in `sdk/ac79`:
+- **4 tracks**, 8 voices shared between them; per track MONO, LEGATO, UNISON and glide
+- **14 engines:** DRONE (DIRGE's), ANALOG, PHASE, LOFI, SAMPLE, VOICE, TRIO, WHEEL, GRAIN, PHYS, DRUM, NOISE, FM6, SLICE
+- **Effects:** per-track DIST, INSERT and SLICER (a tempo-synced gate and stutter); shared DELAY, CHORUS and REVERB
+  (ROOM, SPRING, HALL, and DIRGE's **VAULT**); DIRGE's **TAPE** page over the whole mix
+- **Per track:** envelope, two LFO pages, a 4-slot modulation matrix, scale and chord keys, arpeggiator (14 modes)
+- **Sequencer:** 64 steps per track, chance, ratchets, trig conditions, nudge, parameter locks, automation, step tools
+  (euclid, random, reverse, shift, double, half), a drum grid
+- **Song chain** of patterns, and a **performance layer**: repeat, reverse, tape stop, freeze, octave shifts, filter
+  sweeps, reverb and echo throws
+- **MIDI:** in over USB and TRS, out over USB, MIDI clock in (slaves to a Digitakt II / Digitone II), MIDI learn, a channel
+  per track; the FM-1 is also a USB audio input for your computer
+- **Projects, user presets, phrases and autosave:** the FM-1 comes back as you left it
+
+### What DIRGE adds to Felucca
+
+- **DRONE engine**, first in the PRESETS list: polyBLEP saws pushed apart by DTN and pulled about by DRFT (one slow
+  random walk), a sine SUB, BRTH (noise), DRV (tanh) and a rounded resonant low-pass. WAVE: **DRONE** (two saws at the
+  note, two an octave down), **HIGH** or **SUPER** (seven saws at the JP-8000 supersaw's offsets). Sounds: DIRGE,
+  BLACK MASS, SHIVER, FURNACE, ASH WIND, GRAVEWAVE, NEON TOMB.
+- **FX > TAPE**, three knobs, all off by default:
+  - **TAPE:** the whole mix through a worn cassette (wow, flutter, saturation, a high cut, hiss that follows the music)
+  - **ROOM:** a dead channel's room tone under the mix (static, 50 Hz hum, crackle), into the reverb too
+  - **WEAR:** the delay worn into a tape echo (wow and flutter on its read, darker, saturated repeats)
+- **REVERB TYPE VAULT:** HALL stretched to ~32 s; at SIZE 127 **INF**, a freeze that holds what is in it.
+- **Dark scales:** PHDOM (Phrygian dominant), HUNG (Hungarian minor), DHARM (double harmonic).
+- **KEYS LAYER / SPLIT** (MENU > AUDIO > KEYS, SPLIT): play a second track from every key, or from the keys under a
+  split point.
+- **Power-on scenes** (MENU > SYSTEM > SCENE): **DIRGE** (DRONE, a fat bass with a pattern, wind noise and a deep kit
+  at 90 BPM), **FELUCCA** or **BLANK**.
+- **The look:** three palettes, **BLOOD** (the default), **CRYPT** and **NEON**, and a splash framed like a coffin lid.
+  Felucca's palettes are all still there.
+
+Every DIRGE addition is off, or bit for bit Felucca, until you turn it on: Felucca's projects and sounds open and play
+as they did.
+
+## Install
+
+Back up first: the installer saves your FM-1's music, sounds, samples and settings before it changes anything.
+
+**In the browser** (Chrome or Edge on a computer): open the **[DIRGE installer](https://sinscum.github.io/DIRGE/webapp/installer/)**,
+connect the FM-1 over USB and follow it. The same page takes the FM-1 back to the official V15 firmware
+(**Return to official V15**).
+
+**With Python 3:** download the `.fwsc` package (CI artifacts now, GitHub Releases from the first release), then:
+
+```sh
+pip install mido python-rtmidi
+python3 tools/fm1_install.py dirge-X.Y.fwsc
+```
+
+**If something goes wrong:** hold **OCT−** while switching the FM-1 on for the USB rescue mode, then install again.
+Before the first install of any custom firmware, a full flash backup with M-Flasher or MvaveFM1Unbricker is a good
+idea.
+
+## Learn it
+
+- **[The manual](MANUAL.md):** every button, page, layer and setting, and what DIRGE adds.
+- **Quick start:** switch on. Turn **ALGORITHM** to pick a track, turn **PRESETS** to pick a sound, play the keys.
+  Press **PLAY** to hear the power-on scene. Tap a page button (ENV, LFO, FX, SCL, EDIT, ARP, SEQ) for its pages;
+  **hold** one for its quick layer. Hold **HOME** for the MENU. Hold **SAVE** to undo.
+- **MENU > SYSTEM > HELP ON** shows a short hint on every page.
+
+## The editor and the demo
+
+Both run in Chrome or Edge on a computer, nothing to install.
+
+- **[The editor](https://sinscum.github.io/DIRGE/webapp/editor/):** connect the FM-1 over USB and edit every track's
+  sound, steps, mixer and automation; every move plays on the FM-1 at once. Browse the factory sounds, keep a library
+  of your own, edit FM6 operators, load WAVs into the sample slots, manage projects, and back up or restore
+  everything. Without an FM-1, **[try it with a simulated one](https://sinscum.github.io/DIRGE/webapp/editor/?mock=1)**.
+- **[The demo](https://sinscum.github.io/DIRGE/):** the FM-1's panel on screen, running the same firmware compiled
+  for the browser, with a live oscilloscope. Play it with the mouse, a touch screen or the computer keyboard.
+
+## Your own samples
+
+Open the [editor](https://sinscum.github.io/DIRGE/webapp/editor/), connect the FM-1 and go to **Samples**: drop a WAV
+on one of the three user slots (USR1..USR3, about 7 s each) and upload it. Then pick the SAMPLE or SLICE engine on a track. From a command line:
+
+```sh
+python3 tools/fm1_sample_upload.py info
+python3 tools/fm1_sample_upload.py load 1 GRIT "your-sound.wav:48"   # slot USR1, root note C3
+```
+
+## Building from source
+
+Linux x86-64 (or Docker on macOS): the JieLi toolchain and Python 3 with Pillow (with libraqm) and fontTools; the
+three JieLi SDK files are in `sdk/ac79`. Full guide: [BUILDING.md](BUILDING.md).
 
 ```sh
 git clone --recurse-submodules https://github.com/sinscum/DIRGE.git
-AC79_SDK=sdk/ac79 ./build.sh          # build/felucca.fwsc: identity FM-1_660 (releases: --release X.Y, FM-1_6XY)
+AC79_SDK=sdk/ac79 ./build.sh              # build/felucca.fwsc: identity FM-1_660 (releases: --release X.Y, FM-1_6XY)
 AC79_SDK=sdk/ac79 sh tests/run_tests.sh   # every host test: Felucca's suite and DIRGE's (tests/dirge/)
-web/emu/build.sh                      # the browser emulator (Emscripten): build/emu/
+web/emu/build.sh                          # the browser emulator (Emscripten): build/emu/
 ```
 
-The toolchain: `tools/get_toolchain.sh`, or copied out of foma's image
-(`docker create konsumer/foma-toolchain`, then `docker cp -L <id>:/opt/jieli/toolchain ~/.jieli/toolchain`), as CI
-does (`.github/workflows/ci.yml`: build, tests, emulator, and on `main` the site on GitHub Pages).
+CI (`.github/workflows/ci.yml`) builds, runs every test, builds the emulator and, on `main`, publishes the site.
+
+## Contributing and roadmap
+
+Bugs and ideas: [Issues](https://github.com/sinscum/DIRGE/issues) (see [CONTRIBUTING.md](CONTRIBUTING.md)); please
+report DIRGE's behaviour here, not in Felucca's tracker. Where DIRGE goes next (sidechain ducking, TAKE and deeper
+undo from [Skiff](https://github.com/illuminus5/skiff), a 12-voice budget, six tracks and a pattern pool, GR!MM-style
+HOME and latch): [docs/MERGE_PLAN.md](docs/MERGE_PLAN.md). The chip's rules and the project's conventions: [CLAUDE.md](CLAUDE.md).
 
 ## Upstream
 
@@ -70,6 +138,15 @@ is still maintained. DIRGE's changes to Felucca's own files are kept small and m
 ## Credits and licence
 
 GPL-3.0-only, as Felucca: [LICENSE](LICENSE), with the credits and third-party parts in [LICENSING.md](LICENSING.md)
-and [CREDITS.md](CREDITS.md). Felucca and its engines are by Leo Kuroshita, Hügelton Instruments; DIRGE is not made
-or endorsed by Hügelton Instruments. "M-VAVE" and "FM-1" are trademarks of their respective owners; DIRGE is not
-affiliated with or endorsed by them. Like Felucca, DIRGE never enables the hardware's Bluetooth / Wi-Fi radio.
+and [CREDITS.md](CREDITS.md).
+
+- **[Felucca](https://github.com/hugelton/Felucca)** and **[Felucca-Engines](https://github.com/hugelton/Felucca-Engines)**
+  by Leo Kuroshita, Hügelton Instruments: the platform, the engines, the editor, installer and emulator
+- **[GHOULBOX](https://github.com/jasonpersinger/ghoulbox-fm1-dungeon-synth)** by jasonpersinger: TAPE (ported),
+  ROOM and KEYS after its tape, cave ambience and keyboard layer
+- **[GR!MM](https://github.com/GRiMMBIENT/grimm)** by GRiMMBIENT: VAULT and DRONE's SUPER after its long reverb and
+  supersaw; the shape of this README and the manual
+- **[Skiff](https://github.com/illuminus5/skiff)** by illuminus5: the reference for the features planned next
+
+"M-VAVE" and "FM-1" are trademarks of their respective owners; DIRGE is not affiliated with or endorsed by them. Like
+Felucca, DIRGE never enables the hardware's Bluetooth / Wi-Fi radio.

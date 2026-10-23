@@ -1,23 +1,36 @@
 name: Bug report
-description: Something in Felucca doesn't work as it should (one bug per issue)
+description: Something in DIRGE doesn't work as it should (one bug per issue)
 labels: [bug]
 body:
   - type: markdown
     attributes:
       value: |
-        Issues are for reproducible bugs only. Feature ideas go to [Discussions › Ideas](https://github.com/hugelton/Felucca/discussions/categories/ideas), questions to [Q&A](https://github.com/hugelton/Felucca/discussions/categories/q-a).
+        Issues here are for DIRGE, not Felucca. Ideas and requests: use the **Idea** template.
   - type: input
     id: version
     attributes:
-      label: Felucca version
-      description: Hold HOME > ABOUT on the FM-1
-      placeholder: "v1.0.2"
+      label: DIRGE version
+      description: Hold HOME > SYSTEM > ABOUT on the FM-1
+      placeholder: "v0.2"
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where does it happen?
+      multiple: true
+      options:
+        - On the FM-1
+        - In the browser demo
+        - In the editor
+        - In the installer
+        - With MIDI (clock, notes, learn)
     validations:
       required: true
   - type: input
     id: system
     attributes:
-      label: Computer, OS and browser (if the editor, installer or USB is involved)
+      label: Computer, OS and browser (if the editor, installer, demo or USB is involved)
       placeholder: "macOS 15.6, Chrome 140"
   - type: textarea
     id: steps
@@ -38,6 +51,6 @@ body:
     id: actual
     attributes:
       label: What happened
-      description: A photo or short video helps.
+      description: A photo, a short video or a recording helps.
     validations:
       required: true

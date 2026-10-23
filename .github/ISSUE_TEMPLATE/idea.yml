@@ -1,0 +1,20 @@
+name: Idea
+description: A feature, sound, engine or effect you would like in DIRGE (no promise it will be added)
+labels: [idea]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        DIRGE is aimed at darksynth, noise and drone. The plan so far is in [docs/MERGE_PLAN.md](https://github.com/sinscum/DIRGE/blob/main/docs/MERGE_PLAN.md): check it first.
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What should DIRGE do, and in what kind of music would you use it?
+    validations:
+      required: true
+  - type: textarea
+    id: like
+    attributes:
+      label: Seen elsewhere?
+      description: Another firmware (Skiff, GR!MM, GHOULBOX, ...) or instrument that does it, with a link if you have one.

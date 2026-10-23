@@ -1,4 +1,7 @@
-# Building Felucca
+# Building DIRGE
+
+DIRGE builds exactly as Felucca does (this is Felucca's guide, with DIRGE's names, links and tests). The
+output files keep Felucca's names.
 
 The build makes three files in `build/`:
 
@@ -14,7 +17,7 @@ Five engines are in a git submodule (`firmware/engines/`, [Felucca-Engines](http
 MIT), so clone with `--recurse-submodules`:
 
 ```
-git clone --recurse-submodules https://github.com/hugelton/Felucca.git
+git clone --recurse-submodules https://github.com/sinscum/DIRGE.git
 ```
 
 In a clone made without it, run `git submodule update --init` once. GitHub's "Download ZIP" and the source archives
@@ -34,8 +37,16 @@ source with the submodule's files in it. The build stops with "firmware/engines 
   tools/get_toolchain.sh            # installs to ~/.jieli/toolchain
   ```
 
+  If JieLi's server is out of reach, copy it out of foma's image, as CI does:
+
+  ```
+  id=$(docker create --platform linux/amd64 konsumer/foma-toolchain)
+  docker cp -L "$id:/opt/jieli/toolchain" ~/.jieli/toolchain && docker rm "$id"
+  ```
+
 - The JieLi AC79 SDK (Apache-2.0). The package uses three of its files
-  (`cpu/wl82/tools/uboot.boot`, `cfg_tool.bin`, `cfg/eq_cfg_hw.bin`); they are not part of this tree.
+  (`cpu/wl82/tools/uboot.boot`, `cfg_tool.bin`, `cfg/eq_cfg_hw.bin`). DIRGE keeps those three in `sdk/ac79`, so
+  `AC79_SDK=sdk/ac79` is all you need; the whole SDK works too:
 
   ```
   git clone --depth 1 --branch AC79NN_SDK_V1.2.1_2023-12-13 \
@@ -50,13 +61,14 @@ On Linux x86-64 the toolchain runs natively and Docker is not needed.
 ## Build
 
 ```
-./build.sh
+AC79_SDK=sdk/ac79 ./build.sh
 ```
 
-`JIELI_TOOLCHAIN` and `AC79_SDK` override the default locations
+The package is `build/felucca.fwsc`, identity `FM-1_660`. `JIELI_TOOLCHAIN` and `AC79_SDK` override the default locations
 (`~/.jieli/toolchain`, `~/fw-AC79_AIoT_SDK`).
 
-`./build.sh --release 1.0` makes a release build: the package identity becomes `FM-1_910`
+`./build.sh --release 1.0` makes a release build: the package identity becomes `FM-1_610` (DIRGE's are `FM-1_6XY`,
+Felucca's `FM-1_9XY`)
 and the version string `v1.0`; the package is `build/felucca-1.0.fwsc`, and
 `build/release-1.0/` holds what a release ships: the package, the app
 (`felucca-1.0-app.bin`), `SHA256SUMS`, the sample attribution, `LICENSE`, `LICENSING.md` and
@@ -101,13 +113,14 @@ python3 -m http.server -d build/emu 8790     # open http://localhost:8790/
 `web/emu/felucca_web.c` builds the firmware's sources as the host tests do, against a simulated FM-1, and
 Emscripten compiles it to WebAssembly (`build/emu/felucca.wasm`, with `index.html`, `worklet.js` and the font in `fonts/`). The page
 keeps the flash's storage sectors (projects, user presets, settings) in the browser. Not emulated: USB (audio,
-MIDI out, the editor, updates), TRS MIDI and the user sample slots. A build of it is on the site:
-<https://hugelton.github.io/Felucca/webapp/try/>.
+MIDI out, the editor, updates), TRS MIDI and the user sample slots. DIRGE's site has it at its root, in DIRGE's
+dead-channel room with a live oscilloscope: <https://sinscum.github.io/DIRGE/>. CI builds it in Emscripten's
+`emscripten/emsdk:3.1.74` image.
 
 ## Tests
 
 ```
-tests/run_tests.sh
+AC79_SDK=sdk/ac79 sh tests/run_tests.sh
 ```
 
 Runs the host tests and, with Node.js, the web page tests (and, with Emscripten too, the browser emulator's). Run it after `./build.sh`
@@ -128,10 +141,15 @@ cost (`tests/cpu_baseline.txt`, `tests/target_budget.txt`). After an intended ch
 the sound, `GOLDEN_UPDATE=1 sh tests/run_tests.sh` rewrites the hashes; `BUDGET_UPDATE=1`
 does the same for the cost files.
 
+DIRGE's own tests run in the same suite: its DSP (`tests/dirge/run.sh` against `tests/dirge/golden.txt`; after an
+intended change `UPDATE=1`) and the J_DIRGE renders in `tests/regress.c` (DRONE, TAPE, ROOM, WEAR, VAULT, the
+scales, the scenes, KEYS). `REGRESS_WAV=dir` writes those renders as WAV files to listen to; CI uploads them.
+Say in the commit when a golden changes and why.
+
 ## Install
 
 Use the web installer in Chrome or Edge:
-<https://hugelton.github.io/Felucca/webapp/installer/>. It installs the released package.
+<https://sinscum.github.io/DIRGE/webapp/installer/>. It installs the package CI built from `main`.
 
 From the command line (needs `pip3 install mido python-rtmidi`):
 
@@ -144,10 +162,11 @@ Or, to install your own build from the web installer, make a local copy of the s
 (Web MIDI needs a secure context):
 
 ```
-python3 web/make_site.py build/felucca.fwsc dev /tmp/felucca-site
-cd /tmp/felucca-site && python3 -m http.server 8000
+python3 web/make_site.py build/felucca.fwsc dev /tmp/dirge-site
+cd /tmp/dirge-site && python3 -m http.server 8000
 # open http://localhost:8000/webapp/installer/
 ```
 
-Installing firmware is at your own risk. If an install fails and the FM-1 no longer
-starts, recovery needs [FM-1-transporter](https://github.com/kurogedelic/FM-1-transporter).
+Installing firmware is at your own risk. Back up the whole flash (M-Flasher or MvaveFM1Unbricker) before the first
+install. If an install is cut off, hold OCT- while switching on for the USB update mode and install again; if the
+FM-1 no longer starts at all, recovery needs [FM-1-transporter](https://github.com/kurogedelic/FM-1-transporter).

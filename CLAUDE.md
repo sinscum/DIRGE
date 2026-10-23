@@ -13,7 +13,7 @@ Nobody covers **noise and darksynth**: aggressive mono basses, chaos and feedbac
 
 ## Platform
 
-DIRGE is a **fork of Felucca 1.6.1** (hugelton/Felucca, GPL-3.0), with Felucca's history merged in (remote `felucca`), so its fixes merge in. Lineage: Felucca → SLOOP → Dinghy → foma. DIRGE started on foma and moved to Felucca for its instrument core: 12 voices with MONO / LEGATO / UNISON and glide, the sequencer and song chain, the modulation matrix, MIDI clock in (USB and TRS: needed for the Digitakt II and Digitone II), projects, presets, the web editor and installer. GHOULBOX is also a Felucca fork; GR!MM (Dinghy) has no mono / glide and no clock in.
+DIRGE is a **fork of Felucca 1.6.1** (hugelton/Felucca, GPL-3.0), with Felucca's history merged in (remote `felucca`), so its fixes merge in. Lineage: Felucca → SLOOP → Dinghy → foma. DIRGE started on foma and moved to Felucca for its instrument core: 4 tracks sharing 8 voices (`core.h` NVOICE; Skiff's 12 on two cores is not in DIRGE yet), MONO / LEGATO / UNISON and glide, the sequencer and song chain, the modulation matrix, MIDI clock in (USB and TRS: needed for the Digitakt II and Digitone II), projects, presets, the web editor and installer. GHOULBOX is also a Felucca fork; GR!MM (Dinghy) has no mono / glide and no clock in.
 
 - Felucca's author has stepped back (occasional maintenance). Felucca-Engines (`firmware/engines/`, a git submodule, MIT) is still maintained.
 - Keep DIRGE's changes to Felucca's files small and mark them `DIRGE`; DIRGE's own code goes in its own files (`firmware/src/eng_*.c` engines, `firmware/src/dirge/`).
@@ -40,6 +40,7 @@ DIRGE is a **fork of Felucca 1.6.1** (hugelton/Felucca, GPL-3.0), with Felucca's
 - DIRGE so far: DRONE (WAVE DRONE / HIGH / SUPER), FX > TAPE (TAPE `dirge/tape.c`, ROOM `dirge/room.c`, WEAR in `fx.c`'s delay), REVERB VAULT (`fx.c` HALL to ~32 s + INF), the scales PHDOM / HUNG / DHARM, power-on scenes (`engines.c` DIRGE_SCENES), KEYS LAYER / SPLIT (`seq.c` keys_track). Each is bit for bit Felucca when off; `tests/regress.c` J_DIRGE renders them (REGRESS_WAV=dir writes WAVs; CI uploads them).
 - Build: `AC79_SDK=sdk/ac79 ./build.sh` (toolchain in `~/.jieli/toolchain`, or `JIELI_TOOLCHAIN`; Pillow with libraqm, fontTools). Emulator: `web/emu/build.sh` (Emscripten; CI uses `emscripten/emsdk:3.1.74`).
 - Tests: `AC79_SDK=sdk/ac79 sh tests/run_tests.sh` after a build: Felucca's whole suite (every engine x preset against `tests/golden.txt`, health, CPU budgets, UI renders, storage, MIDI, ...) and DIRGE's DSP tests (`sh tests/dirge/run.sh`, `tests/dirge/golden.txt`). A golden change is fine only when the sound was meant to change: `GOLDEN_UPDATE=1` (regress), `BUDGET_UPDATE=1` (CPU), `UPDATE=1` (tests/dirge), and say so in the commit. CI (`.github/workflows/ci.yml`) runs all of it and publishes the site from `main`.
+- Docs: `README.md` (overview, install, links), `MANUAL.md` (the player's manual: every page, layer and MENU row), `BUILDING.md`, `CONTRIBUTING.md` and `.github/ISSUE_TEMPLATE/`, `docs/MERGE_PLAN.md` (the Skiff / GR!MM plan). A change a player can see updates MANUAL.md (and README.md's lists) in the same commit.
 - Work goes straight to `main` (no feature branches or PRs).
 
 ## Roadmap
