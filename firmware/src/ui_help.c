@@ -23,7 +23,8 @@ static const struct { const char *title, *hint; } HELP_PAGE[] = {
     {"FX", "[K1-4]SENDS[FX]HOLD: PERFORM"},
     {"SLICER", "[K1]ON[K2]PATTERN[FX]INSERT"},
     {"INSERT", "[K1]TYPE[FX]DRY / WET"},
-    {"INSERT 2", "[K1]DRY / WET[FX]DLY"},
+    {"INSERT 2", "[K1]DRY / WET[FX]DUCK"},
+    {"DUCK", "[K1]UNDER TRACK[K2]DEPTH[FX]DLY"},      /* DIRGE */
     {"DLY", "[K1-4]ALL TRACKS[FX]REVERB"},
     {"REVERB", "[K1]4 TYPES[FX]CHORUS"},                /* (DIRGE: + VAULT) */
     {"CHORUS", "[K1-4]ALL TRACKS[FX]TAPE"},

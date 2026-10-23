@@ -1045,6 +1045,9 @@ static void edit_param(uint32_t slot, int32_t steps)
     if (!d || !vp || d->max == d->min)
         return;
     v = param_turn(d, *vp, accel(EN_K1 + slot, steps, d->fmt == F_ENUM ? 0 : d->max - d->min));
+    if (vp == &TSEL->p[P_DKSRC] && v == (int32_t)(song.sel % NTRK) + 1)   /* DIRGE (Skiff's): DUCK BY never the track
+                                                                          * itself (it steps over it) */
+        v = v == d->max ? *vp : v + (steps > 0 ? 1 : -1);
     *vp = (int16_t)v;
     if (pg->scope != SC_GLOBAL) {
         motion_capture(TSEL, (uint32_t)(vp - TSEL->p), *vp);

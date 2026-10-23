@@ -25,7 +25,7 @@ thanks the work below; each keeps its own licence (see [LICENSE](LICENSE), [LICE
 - DIRGE's documentation: [README.md](README.md) and [MANUAL.md](MANUAL.md) after the shape of [GR!MM](https://github.com/GRiMMBIENT/grimm)'s
   README and manual (GPL-3.0); the editor's "try without an FM-1" link after GR!MM's editor. [Skiff](https://github.com/illuminus5/skiff)
   by [illuminus5](https://github.com/illuminus5) (GPL-3.0): the reference for the features planned next ([docs/MERGE_PLAN.md](docs/MERGE_PLAN.md));
-  code ported from it will be credited here as it lands
+  FX > DUCK (`firmware/src/dirge/duck.c`, `tests/duck_test.c`) is ported from Skiff's ducking
 - Package format and boot files: [JieLi AC79 SDK](https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK) ([Apache-2.0](LICENSES/Apache-2.0.txt); three of its files are in every package, none in this tree)
 - Contributions: [keremimo](https://github.com/keremimo) (white-key scales, #2), [ChanceTheMaker](https://github.com/ChanceTheMaker)
   (TRS MIDI, bend, sustain and clock, palettes, favourites, editor display settings: #8, #10, #11, #12),

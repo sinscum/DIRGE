@@ -5862,7 +5862,8 @@ static int test_momentary(void)
                  ok && TSEL->p[id0] != v0 && ui.home);
     /* an FX page (a global) and an engine page */
     open_family(FAM_FX); frame();
-    for (k = 0; k < NPAGES && cur_page()->id[0] != G_RSIZE && cur_page()->id[1] != G_RSIZE; k++) { open_family(FAM_FX); frame(); }
+    for (k = 0; k < NPAGES && !(cur_page()->scope == SC_GLOBAL && (cur_page()->id[0] == G_RSIZE || cur_page()->id[1] == G_RSIZE));
+         k++) { open_family(FAM_FX); frame(); }   /* (DIRGE: DUCK's BY, a track id, is 8 too: the global page) */
     g0 = song.g[G_RSIZE];
     btn_down(B_LFO); frame();
     turn(cur_page()->id[0] == G_RSIZE ? EN_K1 : EN_K2, 9);
@@ -9709,6 +9710,56 @@ static uint64_t qa_beat(uint32_t lanes, double *low)
     }
     return h;
 }
+/* DIRGE: FX > DUCK (dirge/duck.c, Skiff's; the sound itself: tests/duck_test.c): after INSERT 2; KNOB 1 BY steps over the track itself
+ * (T2: OFF T1 T3 T4; T4: up to T3; T1: down to OFF), KNOB 2 DEPTH, KNOB 3 REL; a sound load keeps all three (the mix's);
+ * DEPTH and REL can be automation, BY not (routing) */
+static int test_duck_page(void)
+{
+    int bad = 0, ok;
+    uint32_t i;
+    ui_power_on();
+    for (i = 0; i < NPAGES && !str_eq(PAGES[i].title, "INSERT 2"); i++)
+        ;
+    ok = i + 1u < NPAGES && str_eq(PAGES[i + 1u].title, "DUCK") && PAGES[i + 1u].fam == FAM_FX && PAGES[i + 1u].graph == GR_NONE;
+    song.sel = 1;
+    go_title("DUCK");
+    frame();
+    turn(EN_K1, 1);
+    ok &= TSEL->p[P_DKSRC] == 1;
+    turn(EN_K1, 1);
+    ok &= TSEL->p[P_DKSRC] == 3;                    /* (not T2) */
+    for (i = 0; i < NTRK; i++)                      /* (up to the last track, there it stays) */
+        turn(EN_K1, 1);
+    ok &= TSEL->p[P_DKSRC] == NTRK;
+    for (i = 0; i + 2u < NTRK; i++)                 /* (down past T3: T1) */
+        turn(EN_K1, -1);
+    ok &= TSEL->p[P_DKSRC] == 1;
+    bad += check("DUCK: FX > DUCK after INSERT 2; on T2 KNOB 1 BY steps OFF T1 T3 .. the last track, over T2", ok);
+    song.sel = (uint8_t)(NTRK - 1u);
+    frame();
+    for (i = 0; i < NTRK; i++)
+        turn(EN_K1, 1);
+    ok = TSEL->p[P_DKSRC] == NTRK - 1u;
+    song.sel = 0;
+    frame();
+    TSEL->p[P_DKSRC] = 2;
+    turn(EN_K1, -1);
+    ok &= TSEL->p[P_DKSRC] == 0;
+    bad += check("  on the last track it stops at the one before; on T1 down from T2 to OFF", ok);
+    TSEL->p[P_DKSRC] = 4;
+    turn(EN_K2, -10);
+    turn(EN_K3, 5);
+    {
+        int16_t a = TSEL->p[P_DKAMT], r = TSEL->p[P_DKREL];
+        ok = a < 96 && r > 73;
+        turn(EN_PRESET, 1);                          /* a sound load */
+        ok &= TSEL->p[P_DKSRC] == 4 && TSEL->p[P_DKAMT] == a && TSEL->p[P_DKREL] == r;
+    }
+    ok &= !motion_param(P_DKSRC) && motion_param(P_DKAMT) && motion_param(P_DKREL);
+    bad += check("  KNOB 2 DEPTH, 3 REL; a sound load keeps the three; DEPTH and REL can be automation, BY not", ok);
+    return bad;
+}
+
 static int test_edit_quick_actions(void)
 {
     int bad = 0, ok;
@@ -9979,6 +10030,7 @@ int main(void)
     bad += test_fx_map_columns();
     bad += test_help();
     bad += test_no_flash();
+    bad += test_duck_page();                         /* DIRGE: FX > DUCK */
 #if FELUCCA_FM4
     bad += test_fm_charts();                        /* (DIGITAL's charts: built with FELUCCA_FM4=1 only) */
 #else

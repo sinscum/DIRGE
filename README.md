@@ -26,7 +26,8 @@ Free and open source (GPL-3.0-only). Unofficial firmware, not made or endorsed b
 
 - **4 tracks**, 8 voices shared between them; per track MONO, LEGATO, UNISON and glide
 - **14 engines:** DRONE (DIRGE's), ANALOG, PHASE, LOFI, SAMPLE, VOICE, TRIO, WHEEL, GRAIN, PHYS, DRUM, NOISE, FM6, SLICE
-- **Effects:** per-track DIST, INSERT and SLICER (a tempo-synced gate and stutter); shared DELAY, CHORUS and REVERB
+- **Effects:** per-track DIST, INSERT (fold, crush, fuzz, phaser, ...), SLICER (a tempo-synced gate and stutter) and
+  DUCK (sidechain); shared DELAY, CHORUS and REVERB
   (ROOM, SPRING, HALL, and DIRGE's **VAULT**); DIRGE's **TAPE** page over the whole mix
 - **Per track:** envelope, two LFO pages, a 4-slot modulation matrix, scale and chord keys, arpeggiator (14 modes)
 - **Sequencer:** 64 steps per track, chance, ratchets, trig conditions, nudge, parameter locks, automation, step tools
@@ -47,6 +48,8 @@ Free and open source (GPL-3.0-only). Unofficial firmware, not made or endorsed b
   - **TAPE:** the whole mix through a worn cassette (wow, flutter, saturation, a high cut, hiss that follows the music)
   - **ROOM:** a dead channel's room tone under the mix (static, 50 Hz hum, crackle), into the reverb too
   - **WEAR:** the delay worn into a tape echo (wow and flutter on its read, darker, saturated repeats)
+- **FX > DUCK** (ported from [Skiff](https://github.com/illuminus5/skiff)): a track ducks under another track's notes
+  (a drum track's kick only), DEPTH and RELEASE: the sidechain pump for basses and drones.
 - **REVERB TYPE VAULT:** HALL stretched to ~32 s; at SIZE 127 **INF**, a freeze that holds what is in it.
 - **Dark scales:** PHDOM (Phrygian dominant), HUNG (Hungarian minor), DHARM (double harmonic).
 - **KEYS LAYER / SPLIT** (MENU > AUDIO > KEYS, SPLIT): play a second track from every key, or from the keys under a
@@ -124,7 +127,7 @@ CI (`.github/workflows/ci.yml`) builds, runs every test, builds the emulator and
 ## Contributing and roadmap
 
 Bugs and ideas: [Issues](https://github.com/sinscum/DIRGE/issues) (see [CONTRIBUTING.md](CONTRIBUTING.md)); please
-report DIRGE's behaviour here, not in Felucca's tracker. Where DIRGE goes next (sidechain ducking, TAKE and deeper
+report DIRGE's behaviour here, not in Felucca's tracker. Where DIRGE goes next (TAKE and deeper
 undo from [Skiff](https://github.com/illuminus5/skiff), a 12-voice budget, six tracks and a pattern pool, GR!MM-style
 HOME and latch): [docs/MERGE_PLAN.md](docs/MERGE_PLAN.md). The chip's rules and the project's conventions: [CLAUDE.md](CLAUDE.md).
 

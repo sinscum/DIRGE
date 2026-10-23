@@ -57,6 +57,8 @@ static const char *const N_DASH[] = {"--"};
 static const char *const N_RTYPE[] = {"ROOM", "SPRING", "HALL", "VAULT"};   /* G_RTYPE: the reverb bus's model (fx.c);
                                                                            * DIRGE: VAULT appended */
 static const char *const N_GO[] = {"--", "GO"};
+static const char *const N_DKSRC[] = {"OFF", "T1", "T2", "T3", "T4"};   /* DIRGE: DUCK's BY (dirge/duck.c) */
+_Static_assert(sizeof N_DKSRC / sizeof N_DKSRC[0] == NPART + 1u, "DUCK's BY: OFF and every track");
 static const char *const N_SLCR[] = {"OFF", "GATE", "STUT"};             /* SL_OFF .. SL_STUT (slicer.c) */
 static const char *const N_SLDIV[] = {"1/8", "1/16", "1/32", "8T", "16T", "32T"};   /* SL_DEN */
 /* the INSERT's types (1.5, fx.c IT_*; append-only: stored). Its three values A B C mean what the type says (ins_desc) */
@@ -92,7 +94,7 @@ static const param_desc_t TP[P_COUNT] = {
     [P_ED_FLT] = PD("FLT", F_BIPCT, -64, 63, 0),
     [P_ED_PIT] = PD("PIT", F_BIPCT, -64, 63, 0),
     [P_ED_SHP] = PD("SHP", F_BIPCT, -64, 63, 0),
-    [P_ED_FX] = PD("FX", F_BIPCT, -64, 63, 0),
+    [P_DKSRC] = PE("BY", N_DKSRC, 0),             /* DIRGE: DUCK's BY in P_ED_FX's id (core.h), Felucca's "FX" (unread) */
     [P_LRATE] = PD("RATE", F_LFOHZ, 0, 127, 60),
     [P_LWAVE] = PE("WAVE", N_LWAVE, 0),
     [P_LPHASE] = PD("PHS", F_INT, 0, 127, 0),
@@ -168,6 +170,9 @@ static const param_desc_t TP[P_COUNT] = {
     [P_IMIX] = PD("MIX", F_PCT, 0, 127, 127),
     [P_FTYPE] = PE("TYPE", N_FTYPE, 0),           /* 1.5 (#104): ANALOG's filter, LP = as before (eng_analog.c) */
     [P_ESYNC] = PE("ESYNC", N_ONOFF, 0),          /* 1.5 (#175): OFF = ATK DEC REL in ms, as before (voice.c esync) */
+    [P_DKAMT] = PD("DUCK", F_PCT, 0, 127, 96),   /* (DEPTH: the SLICER's label) */   /* DIRGE (Skiff's ducking, dirge/duck.c): under BY's hits this far
+                                                    * down (100 %: silent), */
+    [P_DKREL] = PD("RLS", F_TIME, 0, 127, 73),    /* back in this long (199 ms; RLS: ENV's is REL). BY OFF: as before */
 };
 
 /* the INSERT's A B C as its TYPE means them (TP's ranges and defaults): the drives DRIVE TONE LEVEL, CRUSH BITS RATE
@@ -457,6 +462,7 @@ static const page_t PAGES[] = {
     {"SLICER", FAM_FX, SC_TRACK, GR_SLCR, {P_SLCR, P_SLPAT, P_SLRATE, P_SLDEPTH}},
     {"INSERT", FAM_FX, SC_TRACK, GR_INS, {P_ITYPE, P_IA, P_IB, P_IC}},   /* 1.5: the track's INSERT (fx.c) */
     {"INSERT 2", FAM_FX, SC_TRACK, GR_INS, {P_IMIX, 0xFF, 0xFF, 0xFF}},  /* .. its dry / wet */
+    {"DUCK", FAM_FX, SC_TRACK, GR_NONE, {P_DKSRC, P_DKAMT, P_DKREL, 0xFF}},   /* DIRGE (Skiff's): dirge/duck.c */
     {"DLY", FAM_FX, SC_GLOBAL, GR_NONE, {G_DTIME, G_DFDBK, G_DCOLOR, G_DMIX}},
     {"REVERB", FAM_FX, SC_GLOBAL, GR_NONE, {G_RTYPE, G_RSIZE, G_RDAMP, 0xFF}},   /* TYPE: ROOM / SPRING / HALL */
     {"CHORUS", FAM_FX, SC_GLOBAL, GR_NONE, {G_CRATE, G_CDEPTH, 0xFF, 0xFF}},

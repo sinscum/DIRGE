@@ -392,6 +392,7 @@ static void mono_remove(track_t *t, uint32_t note)
     t->nmono = (uint8_t)k;
 }
 
+static void duck_note(const track_t *t, uint32_t note);   /* DIRGE: dirge/duck.c (fx.c) */
 static void trk_note_on(track_t *t, uint32_t note, uint32_t vel)
 {
     uint32_t any = 0, i, mode = trk_vmode(t);
@@ -408,6 +409,7 @@ static void trk_note_on(track_t *t, uint32_t note, uint32_t vel)
         return;
     }
     vel = mod_note(t, note, vel);                       /* the matrix's VEL / KEY / RAND (1.5.6: VEL as a destination) */
+    duck_note(t, note);                                 /* DIRGE: a hit another track may duck under (dirge/duck.c) */
     for (i = 0; i < NVOICE; i++)
         any |= t->v[i].gate;
     if (!any) {                                        /* fresh phrase: LFO retrigger (TRIG NOTE) and fade */

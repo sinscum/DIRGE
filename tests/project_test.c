@@ -113,8 +113,8 @@ static int track_ok(const proj_trk_t *n, const proj_trk_v2_t *o, uint32_t t, int
     uint32_t k;
     int ok = (drum ? n->engine == ENGI_DRUM && n->preset == PROJ_DEF_KEEP && steps_grid_same(n->step, o->step)
                    : n->engine == o->engine && n->preset == o->preset && steps_same(n->step, o->step));
-    for (k = 0; k <= P_DETUNE; k++)
-        ok &= n->p[k] == (drum && k == P_LEVEL ? lvl : drum && k == P_REV ? rev : oldv(t, k));
+    for (k = 0; k <= P_DETUNE; k++)                 /* (DIRGE: id 8 is DUCK's BY now: an old project's import gives OFF) */
+        ok &= n->p[k] == (k == P_DKSRC ? 0 : drum && k == P_LEVEL ? lvl : drum && k == P_REV ? rev : oldv(t, k));
     ok &= n->p[P_SLCR] == 0 && n->p[P_SLPAT] == TP[P_SLPAT].def && n->p[P_SLRATE] == TP[P_SLRATE].def &&
           n->p[P_SLDEPTH] == TP[P_SLDEPTH].def;
     for (k = P_M1SRC; k <= P_M4AMT; k++)
@@ -147,7 +147,7 @@ static int track_v3_ok(const proj_trk_t *n, const proj_trk_v3_t *o, uint32_t t)
     uint32_t k;
     int ok = n->engine == o->engine && n->preset == o->preset && steps_same(n->step, o->step);
     for (k = 0; k <= P_SLDEPTH; k++)
-        ok &= n->p[k] == oldv3(t, k);           /* up to the SLICER: the same ids */
+        ok &= n->p[k] == (k == P_DKSRC ? 0 : oldv3(t, k));   /* up to the SLICER: the same ids (DIRGE: id 8, BY: OFF) */
     for (k = P_M1SRC; k <= P_M4AMT; k++)
         ok &= n->p[k] == TP[k].def && TP[k].def == 0;
     for (k = 0; k < 8u; k++)
@@ -175,8 +175,8 @@ int main(void)
     bad += check("layout: SLICER after DETUNE, then the matrix just before P_E0",
                  P_SLCR == P_DETUNE + 1 && P_SLDEPTH + 1 == P_M1SRC && P_M4AMT + 1 == P_FM1_ATK && P_FM4_LEVEL + 1 == P_CHRD && P_VOIC + 1 == P_LN0 &&
                  P_LN7 + 1 == P_LSYNC && P_LSYNC + 3 == P_SQNT && P_SQNT + 1 == P_SPRD && P_SPRD + 1 == P_ITYPE &&
-                 P_ITYPE + 4 == P_IMIX && P_IMIX + 1 == P_FTYPE && P_FTYPE + 1 == P_ESYNC && P_ESYNC + 1 == P_E0 && P_E0 == 103 &&
-                 P_COUNT == PROJ_NP_V3 + 54u && PROJ_NP_V3 == PROJ_NP_V2 + 4u);
+                 P_ITYPE + 4 == P_IMIX && P_IMIX + 1 == P_FTYPE && P_FTYPE + 1 == P_ESYNC && P_ESYNC + 1 == P_DKAMT && P_DKREL + 1 == P_E0 &&
+                 P_E0 == 105 && P_COUNT == PROJ_NP_V3 + 56u && P_COUNT == PROJ_NP_DUCK &&   /* (DIRGE: DUCK) */ PROJ_NP_V3 == PROJ_NP_V2 + 4u);
     bad += check("FUN10 fits one flash object, the retained cache in NOINIT", sizeof(project_store_t) <= 4096u - 256u &&
                  sizeof(project_store_t) == 3840u && 0xC8u + 4u * sizeof(project_store_t) <= 0x3D50u);
 
@@ -419,9 +419,9 @@ int main(void)
         project_t a, c;
         project_store_t st, st2;
         uint32_t i, zero = 1;
-        bad += check("FUN10 name at the end of the reserved tail, the FM6 patches before it, after the data (16 spare)",
+        bad += check("FUN10 name at the end of the reserved tail, the FM6 patches before it, after the data (8 spare: DIRGE's DUCK)",
                      PROJ_NAME_OFF == 3824u && PROJ_FM6_OFF == 3312u && 68u + NTRK * (P_COUNT + 2u + NSTEP * 9u) +
-                     sizeof(chain_config_t) + sizeof(motion_store_t) + 16u == PROJ_FM6_OFF);
+                     sizeof(chain_config_t) + sizeof(motion_store_t) + 8u == PROJ_FM6_OFF);
         memset(&a, 0, sizeof a);
         a.magic = PROJ_MAGIC; a.size = sizeof a; a.parts = NPART; a.phys = PROJ_PHYS;
         chain_defaults(&a.chain);
@@ -453,6 +453,51 @@ int main(void)
         bad += check("FUN7 name with a byte outside 32..126: the project loads, no name",
                      proj_import(&c, &st2, sizeof st2) && !c.name[0] && c.t[1].p[P_LEVEL] == 99);
         bad += check("FUN6..FUN1 imports: no name", !q2.name[0] && !q.name[0]);
+    }
+
+    {   /* DIRGE: a FUN10 written before DUCK (111 parameters): its id 8 held Felucca's P_ED_FX (never read), which is
+         * DUCK's BY now. It loads with BY OFF whatever id 8 held, DEPTH and REL at their defaults, and any motion on id 8
+         * dropped (the rest kept): no ducking a project never asked for, and no project refused for it */
+        project_t a, c;
+        static project_store_t st, old;
+        uint32_t t, src = 68u, dst = 68u, mb, sum;
+        memset(&a, 0, sizeof a);
+        a.magic = PROJ_MAGIC; a.size = sizeof a; a.parts = NPART; a.phys = PROJ_PHYS;
+        chain_defaults(&a.chain);
+        for (t = 0; t < NTRK; t++)
+            a.t[t].p[P_LEVEL] = (int16_t)(90 + t);
+        a.motion.count = 1;
+        a.motion.event[0] = (motion_event_t){(uint8_t)(1u << 6 | 3u), P_DIST, 40};
+        a.sum = proj_sum(&a);
+        ok = proj_pack(&st, &a) && P_COUNT == 113u && P_DKAMT == 103u && P_DKREL == 104u && P_DKSRC == 8u;
+        memset(&old, 0, sizeof old);
+        memcpy(old.raw, st.raw, 68u);
+        old.raw[66] = 111u;
+        for (t = 0; t < NTRK; t++) {                    /* (each track without DEPTH and REL, 103 and 104) */
+            memcpy(old.raw + dst, st.raw + src, 103u);
+            old.raw[dst + P_DKSRC] = (uint8_t)(64 + 3);  /* id 8: a value Felucca's FX may have held (3: "T3" now) */
+            src += 105u; dst += 103u;
+            memcpy(old.raw + dst, st.raw + src, 8u + 2u + NSTEP * 9u);
+            src += 8u + 2u + NSTEP * 9u; dst += 8u + 2u + NSTEP * 9u;
+        }
+        memcpy(old.raw + dst, st.raw + src, sizeof(chain_config_t) + sizeof(motion_store_t));
+        mb = dst + sizeof(chain_config_t);              /* the motion: count, on, 2 reserved, then 3 bytes each */
+        old.raw[mb] = 2u;
+        old.raw[mb + 4u + 3u] = (uint8_t)(2u << 6 | 5u);
+        old.raw[mb + 4u + 4u] = P_DKSRC;               /* motion of id 8 on track 3 */
+        old.raw[mb + 4u + 5u] = 3u;
+        memcpy(old.raw + PROJ_KEYS_OFF, st.raw + PROJ_KEYS_OFF, PROJ_STORE_SIZE - 4u - PROJ_KEYS_OFF);
+        sum = proj_hash(old.raw, PROJ_STORE_SIZE - 4u);
+        memcpy(old.raw + PROJ_STORE_SIZE - 4u, &sum, 4);
+        ok &= proj_import(&c, &old, sizeof old);
+        for (t = 0; t < NTRK; t++)
+            ok &= c.t[t].p[P_DKSRC] == 0 && c.t[t].p[P_DKAMT] == TP[P_DKAMT].def && c.t[t].p[P_DKREL] == TP[P_DKREL].def &&
+                  c.t[t].p[P_LEVEL] == (int16_t)(90 + t);
+        ok &= c.motion.count == 1u && c.motion.event[0].param == P_DIST && c.motion.event[0].value == 40 &&
+              c.motion.event[1].param == 0u;
+        bad += check("DIRGE: a FUN10 of 111 (before DUCK): id 8's value and motion gone (BY OFF), DEPTH / REL defaults", ok);
+        ok = proj_import(&c, &st, sizeof st) && !memcmp(&a, &c, sizeof a);
+        bad += check("DIRGE: a FUN10 of 113 round trips as it is", ok);
     }
 
     {   /* FUN8: each track's FM6 patch travels with the project; FUN7 and older get the init patch */

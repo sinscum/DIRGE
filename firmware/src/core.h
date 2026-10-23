@@ -72,6 +72,8 @@ enum {                          /* per-track parameters */
     P_ITYPE, P_IA, P_IB, P_IC, P_IMIX,         /* 1.5 (#78, #177): the INSERT, its TYPE, three values and MIX (fx.c) */
     P_FTYPE,                                   /* 1.5 (#104): ANALOG's filter TYPE, LP (as before) / BP / HP (eng_analog.c) */
     P_ESYNC,                                   /* 1.5 (#175): ENV SYNC: ATK DEC REL as note values of the tempo (voice.c) */
+    P_DKAMT, P_DKREL,                          /* DIRGE (Skiff's): FX > DUCK (dirge/duck.c), DEPTH and RELEASE (P_COUNT
+                                                * 113, P_E0 105; FUN10's tail: 3 bytes left, no more track parameters) */
     P_E0, P_E1, P_E2, P_E3, P_E4, P_E5, P_E6, P_E7,
     P_COUNT
 };
@@ -100,6 +102,11 @@ enum {                          /* global parameters */
 #define G_TAPE G_DRLVL           /* FX > TAPE: the master tape (dirge/tape.c) */
 #define G_ROOM G_DRREV           /* FX > TAPE: the room tone (dirge/room.c) */
 #define G_WEAR G_ENGGO           /* FX > TAPE: the delay worn as a tape echo (fx.c fx_buses) */
+/* DIRGE: DUCK's BY (the track a track ducks under, dirge/duck.c) in the track parameter id nothing reads: P_ED_FX (its
+ * ENV DEST slot went to ENV SYNC in 1.5). FUN10's tail had room for two new track parameters, not three. A project
+ * written before DUCK (np < PROJ_NP_DUCK) may hold an old value or motion there: its import zeroes it and drops that
+ * motion (project.c); sound loads never touch it (ui.c param_kept): BY is the track's, not the sound's */
+#define P_DKSRC P_ED_FX
 
 /* stored parameters of an older layout -> today's P_* order. A store keeps np = the P_COUNT it was
  * written with; common parameters are only ever added just before P_E0, so the first np - 8 are
@@ -319,9 +326,9 @@ typedef struct track {
     uint8_t lfo_wrap;            /* the LFO's phase wrapped this block: its S&H is drawn after the parts (voice.c) */
     uint32_t esync_k[3];         /* ATK's step, DEC's and REL's coefficient (Q16) this block (voice.c esync_coef) */
     uint8_t spread_on;           /* SPREAD this block (fx.c mix_part, voice.c track_render) */
-    uint8_t rsv_sz[1];           /* (sizeof(track_t) a multiple of 16: below) */
+    uint8_t rsv_sz[13];          /* (sizeof(track_t) a multiple of 16: below; DIRGE: 13 with DUCK's DEPTH REL) */
 #else
-    uint8_t rsv_sz[14];          /* (sizeof(track_t) a multiple of 16: below) */
+    uint8_t rsv_sz[10];          /* (sizeof(track_t) a multiple of 16: below; DIRGE: 10 with DUCK's DEPTH REL) */
 #endif
     int16_t armp, aholdp;        /* P_AMODE / P_AHOLD as last seen by the ISR */
     /* engine switch (voice.c engine_block): the old engine's voices fade out, then it switches */

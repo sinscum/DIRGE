@@ -151,7 +151,7 @@ with an amount. S&H on the LFO with a slow rate is the slow random modulation fo
 
 ## 7. FX
 
-Tap **FX** to go round its pages. The first four are the selected track's; the rest are shared by all tracks.
+Tap **FX** to go round its pages. The first five are the selected track's; the rest are shared by all tracks.
 
 | Page | KNOB 1 | KNOB 2 | KNOB 3 | KNOB 4 |
 |---|---|---|---|---|
@@ -159,6 +159,7 @@ Tap **FX** to go round its pages. The first four are the selected track's; the r
 | **SLICER** (track) | OFF / GATE / STUT | PATTERN (16) | RATE: 1/8 1/16 1/32 8T 16T 32T | DEPTH |
 | **INSERT** (track) | TYPE | A | B | C |
 | **INSERT 2** (track) | MIX | | | |
+| **DUCK** (track, DIRGE) | BY: OFF / T1–T4 | DUCK (the depth) | RLS (the release) | |
 | **DLY** (all) | TIME (note values, dotted too) | FEEDBACK | COLOR | MIX |
 | **REVERB** (all) | TYPE: ROOM / SPRING / HALL / **VAULT** | SIZE | DAMP | |
 | **CHORUS** (all) | RATE | DEPTH | | |
@@ -169,6 +170,12 @@ Tap **FX** to go round its pages. The first four are the selected track's; the r
   distortion chain for basses and leads: try FOLD or CRUSH with MIX at full.
 - **SLICER:** chops the track into a tempo-synced rhythm. GATE closes the sound on the pattern's off steps; STUT
   repeats the last on step instead. It locks to the sequencer and swing.
+- **DUCK** (DIRGE, from Skiff): the sidechain pump. The track dips each time the track set in **BY** plays a note,
+  by DUCK (100 % is silent), and comes back over RLS (the release). A DRUM track ducks others only with its KICK lane, so the
+  hats never pump. Put a drone or a bass on DUCK BY the drum track for the darksynth pump. It works after the track's
+  DIST, INSERT and SLICER and before its level and sends, so the sends dip too while the delay and reverb tails ring
+  on. A sound load keeps DUCK (it belongs to the track's mix); DUCK and RLS can be automated and locked per step.
+  BY skips the track itself.
 - **VAULT** (DIRGE): HALL stretched to about 32 seconds. At **SIZE 127** it becomes **INF**: a freeze that holds what
   is in the reverb while you play over it.
 - **TAPE** (DIRGE), all three off by default:

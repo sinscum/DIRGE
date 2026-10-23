@@ -65,6 +65,8 @@
  * ANALOG's filter TYPE (P_FTYPE, 101) and ENV SYNC (P_ESYNC, 102), before the engine values (P_COUNT 111, P_E0 103; 16
  * spare, room for 4). A FUN10 of 1.2 .. 1.4 (104) loads by count: the INSERT OFF, TYPE LP, ENV SYNC OFF (as they
  * played), its engine values and their motion moved up by seven.
+ * DIRGE's DUCK (P_COUNT 113, P_E0 105; no format change): DEPTH and REL before the engine values; BY in P_ED_FX's id 8
+ * (core.h P_DKSRC), so a FUN10 of before (np < PROJ_NP_DUCK) gets BY OFF and its id-8 motion dropped (proj_unpack).
  * Firmware 1.2 .. 1.4 refuses a FUN10 of more parameters than its own (np > P_COUNT): a 1.5 project shows EMPTY there. FUN9 / FUN8 / FUN7 load as before (their 64 records of 4 bytes read by proj_motion_v9, every
  * step's nudge 0: the timing they always had; parameters mapped by count, the four new ones at their defaults:
  * SYNC OFF, TRIG NOTE, POL BI, QUANTIZE ON, SPREAD 0, which play as before 1.2), and so do FUN6..FUN1. Firmware before 1.2
@@ -108,6 +110,7 @@
 #define PROJ_NG_V2 27u                         /* G_COUNT of formats 1 and 2 */
 #define PROJ_NP_V3 57u                         /* P_COUNT of format 3 (P_E0 was 49) */
 #define PROJ_NP_V4 69u                         /* P_COUNT of format 4 (P_E0 61) */
+#define PROJ_NP_DUCK 113u                      /* DIRGE: P_COUNT since DUCK (core.h P_DKSRC: before it, id 8 was P_ED_FX) */
 #define PROJ_PHYS 2u                           /* project_t.phys: PHYS without DUST and DRUM (see the top) */
 #define PROJ_NAME_LEN 12u                      /* the name: FUN7 bytes PROJ_NAME_OFF.. (the reserved tail's end) */
 typedef struct {                               /* one track */
@@ -166,8 +169,8 @@ _Static_assert(sizeof(project_v5_t) == 3352u && sizeof(project_v6_t) == 3388u, "
  * channels make, else CH1-4), which is all a firmware before 1.5.5 reads (these bytes it never did): a TRACK project plays
  * there as that block. Every project before has them 0: channels 1..4, MIDI IN as its G_ROUTE says */
 #define PROJ_MIDI_OFF (PROJ_FM6_OFF - 3u)
-/* DIRGE: MENU > AUDIO > KEYS and SPLIT, the 2 of FUN10's spare bytes before MIDI IN TRACK's (11 left, 2 more track
- * parameters): KEYS (0..8; more read as OFF), SPLIT as song.ksplit (0: C4; 27 and more read as C4). Every
+/* DIRGE: MENU > AUDIO > KEYS and SPLIT, the 2 of FUN10's spare bytes before MIDI IN TRACK's (11 left then; DUCK's DEPTH
+ * and REL took 8, 3 are left: no more track parameters in FUN10): KEYS (0..8; more read as OFF), SPLIT as song.ksplit (0: C4; 27 and more read as C4). Every
  * project before has them 0: KEYS OFF, SPLIT C4. A firmware without them never reads them: it plays the selected track */
 #define PROJ_KEYS_OFF (PROJ_MIDI_OFF - 2u)
 typedef union { uint32_t align; uint8_t raw[PROJ_STORE_SIZE]; } project_store_t;
@@ -532,6 +535,8 @@ static int proj_import_any(project_t *q, const void *b, int n)
     }
     if (!proj_import_old(q, b, n))
         return 0;
+    for (uint32_t t = 0; t < NTRK; t++)
+        q->t[t].p[P_DKSRC] = 0;                         /* DIRGE: P_ED_FX's old value is no DUCK BY (core.h) */
     proj_fm6_init(q);
     return 1;
 }
@@ -674,12 +679,20 @@ static int proj_pack(project_store_t *out, const project_t *q)
  * locks). 0: an id that store could not have named (np or more) */
 static int proj_motion_ids(motion_store_t *m, uint32_t np)
 {
-    uint32_t i;
+    uint32_t i, n = 0;
     for (i = 0; i < m->count && i < MOTION_MAX; i++) {
         uint32_t id = MOTION_ID(&m->event[i]);
         if (id >= np) return 0;
+        if (np < PROJ_NP_DUCK && id == P_DKSRC)         /* DIRGE: P_ED_FX's motion (never read) is dropped: the id is */
+            continue;                                   /* DUCK's BY now, which no motion sets */
         if (np < P_COUNT && id >= np - 8u)
             m->event[i].param = (uint8_t)((m->event[i].param & MOTION_LOCK) | (id + P_COUNT - np));
+        m->event[n++] = m->event[i];
+    }
+    if (m->count <= MOTION_MAX) {                       /* (more: motion_valid refuses the store as before) */
+        for (i = n; i < m->count; i++)
+            memset(&m->event[i], 0, sizeof m->event[i]);
+        m->count = n;
     }
     return 1;
 }
@@ -727,6 +740,8 @@ static int proj_unpack(project_t *q, const uint8_t *b, uint32_t st)
         if (q->t[t].engine >= NENGINES) return 0;
         for (i = 0; i < P_COUNT; i++) def[i] = param_desc_of(q->t[t].engine, i)->def;
         params_by_count(q->t[t].p, values, np, def);
+        if (np < PROJ_NP_DUCK)
+            q->t[t].p[P_DKSRC] = 0;                     /* DIRGE: P_ED_FX's old value is no DUCK BY: OFF */
         for (i = 0; i < NSTEP; i++) {
             step_t *s = &q->t[t].step[i]; uint32_t meta, nd = 0;
             for (uint32_t j = 0; j < 4u; j++) {         /* (FUN10: bit 7 of note j is bit j of the nudge) */

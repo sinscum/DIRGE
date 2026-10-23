@@ -801,6 +801,24 @@ moved up by seven). Firmware 1.2 .. 1.4 refuses a FUN10 of 111 (more parameters 
 backup PUT of one answers rc 1); user presets of 111 load there by count (the seven left out). Library files of 104 map
 by label: the INSERT, TYPE and ESYNC unset.
 
+### DIRGE: DUCK (track parameters 8, 103, 104)
+
+DIRGE's FX > DUCK (ported from Skiff's ducking): a track's level dips under another track's notes. No command changed;
+`INFO` says P_COUNT 113, P_E0 105, and `DESC` describes the three:
+
+| id | label | |
+| --- | --- | --- |
+| 8 | `BY` | enum OFF T1 T2 T3 T4, default OFF: the track whose notes duck this one (a DRUM track: its KICK lane only); never the track itself. Id 8 was Felucca's `FX` (P_ED_FX, ENV DEST's fourth until 1.5), which nothing read |
+| 103 | `DUCK` | 0..127 (PCT), default 96: how far down (127: silent); the depth (labelled DUCK: the SLICER has DEPTH) |
+| 104 | `RLS` | 0..127 (TIME), default 73 (199 ms): how long it takes to come back |
+
+The three are the track's, not the sound's: a sound load (`UP_LOAD`, a preset, the editor's library) keeps them, as it
+keeps LEVEL, PAN and the SLICER. DEPTH and REL can be motion (locks, automation); BY cannot. Projects: FUN10 unchanged,
+113 at byte 66 (8 bytes to spare before the FM6 patches; 3 after KEYS and MIDI IN TRACK's tail bytes: no more track
+parameters). A FUN10 of before (111) loads by count with DEPTH and REL at their defaults, BY OFF (whatever its id 8
+held) and any motion on id 8 dropped. An editor that knows P_E0 105 shows FX > DUCK with ids 8 103 104 and leaves id 8
+off ENV DEST.
+
 ## v7: full backup (65-67)
 
 INFO advertises `42 01 caps`: bit 0 = `BACKUP_LIST` / `BACKUP_GET` (read), bit 1 = `BACKUP_PUT` (restore);

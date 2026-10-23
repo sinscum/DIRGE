@@ -75,7 +75,9 @@ not cherry-picks.
 Small, self-contained wins first; the structural changes after a design note each. (Updated after the docs pass
 found INSERT's distortions and the chord keys already in DIRGE.)
 
-1. **DUCK** (`duck.c`): off by default, bit for bit when off.
+1. **DUCK** (`duck.c`): off by default, bit for bit when off. **Done** (`firmware/src/dirge/duck.c`, FX > DUCK after
+   INSERT 2; BY reuses the unused id 8, DEPTH / REL are new: P_COUNT 113). FUN10 is now full for track parameters, so
+   anything per-track after this (DRIVE's two, ENV 2) needs a format step: plan it with the six-track format (5).
 2. **Preset tags / LIST** and the **ENV 2** page, if wanted after trying Skiff's.
 3. **8-level undo and TAKE** (`ui.c`, `take.c`): CPU-check the ISR note log against `tests/target_budget.txt`.
 4. **Voice budget 12 on two cores** (Skiff 1.3's VOICE_BUDGET), before any track-count change.
@@ -106,7 +108,7 @@ work
 | Grain | GRAIN engine | GRAIN engine | GRAIN send with FREEZE | **Design** (7) |
 | Distortion | DIST (soft clip) + INSERT: SOFT HARD FOLD FUZZ CRUSH | DRIVE: SOFT HARD FOLD BITS + TONE | — | **Have**; DRIVE kinds optional (10) |
 | Slicer | SLICER | SLICER (same code) | — | **Have** |
-| Sidechain | — | DUCK | — | **Port** (1) |
+| Sidechain | FX > DUCK (from Skiff) | DUCK | — | **Done** (1) |
 | Scales | Felucca's + PHDOM HUNG DHARM | 16 scales | scale snapping | **Have** |
 | Envelope | ENV, ENV DEST, ENV SYNC | + ENV 2, a graph | envelope | **Have**; ENV 2 optional (2) |
 | LFO | LFO, LFO 2, LFO DEST, MOD | the same four | per-track LFO | **Have** |

@@ -64,3 +64,5 @@ rev_side_mix 9
 track_insert 3
 ins_drive 277
 ins_swept 230
+duck_block 123
+duck_apply 10

@@ -227,6 +227,7 @@ static uint32_t div_samples(uint32_t div)
 }
 
 #include "perform.c"                                 /* the FX hold layer's effects (the master) */
+#include "dirge/duck.c"                              /* DIRGE: FX > DUCK, a track under another's hits (mix_part) */
 #include "dirge/tape.c"                              /* DIRGE: FX > TAPE, the master tape (mix_block) */
 #include "dirge/room.c"                              /* DIRGE: FX > TAPE ROOM, the room tone (mix_block) */
 #include "click.c"                                   /* the metronome's click (after the master: audio.c) */
@@ -929,6 +930,10 @@ static __attribute__((noinline)) void mix_spread(track_t *t, int32_t *b, uint32_
     slicer_track_sd(t, b, d, n);
     if ((pf.mute >> (t - trk)) & 1u)
         perf_mute_sd((uint32_t)(t - trk), b, d, n);
+    if ((duck_on >> (t - trk)) & 1u) {                  /* DIRGE: DUCK (dirge/duck.c), the same gain on both */
+        duck_apply((uint32_t)(t - trk), b, n);
+        duck_apply((uint32_t)(t - trk), d, n);
+    }
     for (i = 0; i < n; i++) {
         int32_t x = ((b[i] >> 2) * lvl) >> 10, a = x < 0 ? -x : x, y = ((d[i] >> 2) * lvl) >> 10;
         int32_t xs = clamp(x, -xmax, xmax);
@@ -997,6 +1002,8 @@ static void mix_part(track_t *t, uint32_t n SM_DECL)
         slicer_track(t, b, n);                          /* slicer.c: before the level, pan and sends */
         if ((pf.mute >> (t - trk)) & 1u)
             perf_mute((uint32_t)(t - trk), b, n);       /* perform.c: a black key in the FX layer */
+        if ((duck_on >> (t - trk)) & 1u)
+            duck_apply((uint32_t)(t - trk), b, n);      /* DIRGE: DUCK, under its source's hits (dirge/duck.c) */
     }
     if (!T_SPREAD(t)) {                                /* (the mix's values read after the calls: none is held over
                                                          * them, no spill in the loop: the ISR's cost as before 1.5) */
@@ -1124,6 +1131,7 @@ static void mix_block(int32_t *out, uint32_t n)
     for (i = 0; i < n; i++)
         send_c[i] = send_d[i] = send_r[i] = mix_l[i] = mix_r[i] = 0;
     events_block(n);
+    duck_block(n);                                      /* DIRGE: DUCK's gains, before the split (dirge/duck.c) */
     perf = perf_begin(n);                               /* the FX hold layer at work (perform.c) */
 #if FELUCCA_CPU2
     uint32_t m = C1_ON() ? C1_SPLIT() & ((1u << NPART) - 1u) : 0u;
