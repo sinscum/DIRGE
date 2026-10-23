@@ -227,6 +227,8 @@ static void arp_remove(track_t *t, uint32_t note)
 static void rec_note(track_t *t, uint32_t note, uint32_t vel);
 static void rec_release(track_t *t, uint32_t note);
 static int rec_on(const track_t *t) { return ((song.rec >> trk_index(t)) & 1u) && song.playing && !chain.running; }
+static void take_note(track_t *t, uint32_t note, uint32_t vel);   /* DIRGE: TAKE's log (dirge/take.c) */
+static void take_knob(track_t *t, uint32_t id, int16_t value);
 
 #include "motion.c"
 
@@ -254,6 +256,7 @@ static __attribute__((noinline)) void arp_chord_off(track_t *t, int rec)   /* th
         if (t->arp_ch[i]) {
             if (rec)
                 rec_release(t, t->arp_ch[i]);
+            take_note(t, t->arp_ch[i], 0);              /* (DIRGE: TAKE's log, not recording) */
             trk_note_off(t, t->arp_ch[i]);
             t->arp_ch[i] = 0;
         }
@@ -274,6 +277,7 @@ static __attribute__((noinline)) void arp_chord(track_t *t, const uint32_t *list
             t->arp_ch[i - 1u] = (uint8_t)nt;
         if (rec_on(t))
             rec_note(t, nt, 100);
+        take_note(t, nt, 100);                      /* (DIRGE: TAKE's log, not recording) */
         trk_note_on(t, nt, 100);
     }
 }
@@ -282,6 +286,7 @@ static void arp_silence(track_t *t)              /* the sounding arp note(s) end
 {
     if (t->arp_ch[0] | t->arp_ch[1] | t->arp_ch[2])
         arp_chord_off(t, 0);
+    take_note(t, t->arp_note, 0);                   /* (DIRGE: TAKE's log) */
     trk_note_off(t, t->arp_note);
     t->arp_note = 0;
 }
@@ -290,6 +295,7 @@ static void arp_off(track_t *t)                  /* the sounding arp note(s) end
 {
     if (t->arp_ch[0] | t->arp_ch[1] | t->arp_ch[2])
         arp_chord_off(t, rec_on(t));
+    take_note(t, t->arp_note, 0);                   /* (DIRGE: TAKE's log) */
     trk_note_off(t, t->arp_note);
     if (rec_on(t))
         rec_release(t, t->arp_note);
@@ -429,6 +435,7 @@ static __attribute__((noinline)) void arp_fire(track_t *t, uint32_t period)
         t->arp_note = (uint8_t)list[j];
         if (rec_on(t))
             rec_note(t, t->arp_note, 100);           /* recording: what the arp plays */
+        take_note(t, t->arp_note, 100);             /* (DIRGE: else TAKE's log) */
         trk_note_on(t, t->arp_note, 100);
     }
 }
@@ -570,6 +577,8 @@ static void rec_note(track_t *t, uint32_t note, uint32_t vel)
         t->rh_note[t->rh_n++] = (uint8_t)note;      /* a chord: held until its last key is up */
 }
 
+#include "dirge/take.c"                       /* DIRGE: TAKE's log (after rec_note: rec_nudge, step_samples) */
+
 /* the sequencer enters step idx (before playing it): a recorded note still held ties into it */
 static void rec_hold(track_t *t, uint32_t idx, uint32_t len)
 {
@@ -635,6 +644,8 @@ static void input_on(track_t *t, uint32_t note, uint32_t vel)
         cin_keep(t, note, vel);
     if (rec_on(t) && !t->p[P_AMODE])               /* (ARP on: arp_tick records its notes) */
         rec_note(t, note, vel);
+    else if (!t->p[P_AMODE])
+        take_note(t, note, vel);                    /* DIRGE: not recorded: TAKE's log (dirge/take.c) */
     if (t->p[P_AMODE])
         arp_add(t, note);
     else
@@ -654,6 +665,8 @@ static void input_off(track_t *t, uint32_t note)
                 cin_up[i] |= (uint8_t)(1u << k);
     }
     rec_release(t, note);
+    if (!t->p[P_AMODE])
+        take_note(t, note, 0);                      /* DIRGE: its end, for TAKE's holds */
     arp_remove(t, note);                            /* both: the note may have started in the */
     trk_note_off(t, note);                          /* other mode (ARP switched while held) */
 }
@@ -855,6 +868,7 @@ static void seq_start(void)
     uint32_t i;
     motion_begin();
     chain_start();
+    take_clear();                                  /* DIRGE: TAKE, a new log from PLAY */
     for (i = 0; i < NTRK; i++) {                   /* every track from its step 0, together */
         track_t *t = &trk[i];
         t->seq_idx = (uint16_t)(t->p[P_SLEN] - 1);
@@ -1181,8 +1195,10 @@ static __attribute__((noinline)) void seq_nd_start(track_t *t, uint32_t period, 
  * recorded note held ties into it (not inlined: once a step, off the audio ISR's loop) */
 static __attribute__((noinline)) void seq_enter(track_t *t, uint32_t top, uint32_t len)
 {
-    if (!t->seq_idx)
+    if (!t->seq_idx) {
         t->cond_loop = (uint8_t)(top || t->cond_loop + 1u >= COND_LOOPS ? 0u : t->cond_loop + 1u);
+        take_pass[trk_index(t)]++;                  /* DIRGE: a new pass of its loop (TAKE, dirge/take.c) */
+    }
     rec_hold(t, t->seq_idx, len);
 }
 

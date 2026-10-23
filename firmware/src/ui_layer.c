@@ -27,7 +27,8 @@
  *              OCT- cancels). Each action one undo (SAVE held), OCT- the track as the layer opened (tl_open)
  *   REC  SET   (1.1.5, on every page; REC's tap still arms / disarms) the white keys from F3: CLEAR (the selected
  *              track's steps and automation, no dialog: one undo, SAVE held), CLICK (OFF REC ON), COUNT-IN (OFF 1 BAR
- *              2 BARS), CLICK LEVEL (LOW MID HIGH), each press the next value; KNOB 1..3 the same three. The settings
+ *              2 BARS), CLICK LEVEL (LOW MID HIGH), each press the next value; DIRGE: C4 TAKE (dirge/take_commit.c: the
+ *              last whole pass played with REC off into the track); KNOB 1..3 the same three. The settings
  *              are MENU > AUDIO's (ui.c rp_get / rp_put: one store), saved when the layer closes; OCT- puts back the
  *              settings and the track as the layer opened (tl_open). Replaces the old REC held on SEQ (Discussion #91:
  *              the CLEAR Tn SEQUENCE? dialog and its "HOLD: CLEAR" hint)
@@ -470,6 +471,10 @@ static void rec_key(uint32_t p)
         rec_clear();
         return;
     }
+    if (p == 4u) {                                      /* DIRGE: C4 TAKE, the last pass played into the track */
+        take_commit(song.sel);
+        return;
+    }
     v = (rp_get(RL_F[r]) + 1u) % 3u;                    /* the next value, round */
     rec_set(r, v);
     ui_say(r == 2u ? "CLICK LEVEL " : r ? "COUNT-IN " : "CLICK ", rl_name(r, v));
@@ -666,7 +671,7 @@ static void layer_key(uint32_t l, uint32_t k)
     } else if (l == LAYER_EDIT) {
         eqa_key(k, p);                                  /* (black keys: the engine's quick actions) */
     } else if (l == LAYER_REC) {
-        if (!key_black(k) && p < 4u)
+        if (!key_black(k) && p < 5u)                    /* (DIRGE: + C4 TAKE) */
             rec_key(p);
     } else if (l == LAYER_SEQ) {
         if (!key_black(k))
@@ -866,6 +871,8 @@ static uint32_t layer_leds(uint32_t *br)
             on = p == 1u ? rp_get(RP_CLICK) != 0u : p == 2u ? rp_get(RP_COUNTIN) != 0u :   /* CLEAR: something to */
                  p == 3u && rp_get(RP_CLICK) != 0u;    /* clear, not while a song plays */
             can = p ? 1u : !chain_busy() && rec_clearable();
+        } else if (l == LAYER_REC && !b && p == 4u) {   /* DIRGE: TAKE breathes while a whole pass is there to take */
+            can = take_ready(TSEL) == 0u;
         }
         m |= on << k;
         n |= (can & !on) << k;
@@ -1125,14 +1132,30 @@ static void layer_seq(void)
  * or the setting's three values, the one now with the selection's fill (as MENU > AUDIO steps them) */
 #define LR_KW 78                                         /* the key's cell; the values 46 px each: x 6 .. 234 */
 #define LR_VW 46
-#define LR_H 26
+#define LR_H 20                                          /* (DIRGE: 5 rows with TAKE; 26 for Felucca's 4) */
 static void layer_rec(void)
 {
     uint32_t r, v;
     char n[3] = {0, 0, 0}, b[16];
-    for (r = 0; r < 4u; r++) {
+    for (r = 0; r < 5u; r++) {
         int32_t y = 4 + (LR_H + 4) * (int32_t)r, x = 6, vx = 6 + LR_KW + 4;
-        uint32_t dim = r == 0u && (chain_busy() || !rec_clearable());
+        uint32_t dim = (r == 0u && (chain_busy() || !rec_clearable())) || (r == 4u && take_ready(TSEL));
+        if (r == 4u) {                                   /* DIRGE: C4 TAKE, and what it would do now */
+            static const char *const TK_WHY[5] = {"LAST LOOP", "PLAY A LOOP", "DISARM REC", "STOP TO EDIT", "PRESS PLAY"};
+            int32_t w = 234 - vx;
+            uint16_t ink, fill = lc_box(x, y, LR_KW, LR_H, lc_fill(dim ? LS_DIM : LS_OFF, &ink));
+            n[0] = W_NOTE[r];
+            GFX_HOOK_ALIGN(0, y, 0, y + LR_H, AL_V, "rec layer key cell on its middle");
+            cv_text_on(x + 5, y + CAP_IN(S, LR_H), &AF_S, n, fill == T_RAISE || fill == T_SURF ? T_MID : ink, fill);
+            GFX_HOOK_ALIGN(0, y, 0, y + LR_H, AL_V, "rec layer key cell on its middle");
+            cv_icon_in(x + 15, y, 0, LR_H, 12, ICON_LOOP, ink, fill);
+            GFX_HOOK_ALIGN(0, y, 0, y + LR_H, AL_V, "rec layer key cell on its middle");
+            cv_text_r(x + LR_KW - 5, y + CAP_IN(S, LR_H), &AF_S, "TAKE", ink, fill);
+            fill = lc_box(vx, y, w, LR_H, lc_fill(dim ? LS_DIM : LS_OFF, &ink));
+            GFX_HOOK_ALIGN(vx, y, vx + w, y + LR_H, AL_HV, "rec layer take cell centred");
+            cv_text_in(vx, y + CAP_IN(S, LR_H), w, &AF_S, TK_WHY[take_ready(TSEL) % 5u], ink, fill);
+            continue;
+        }
         uint16_t ink, fill = lc_box(x, y, LR_KW, LR_H, lc_fill(dim ? LS_DIM : LS_OFF, &ink));
         n[0] = W_NOTE[r];
         GFX_HOOK_ALIGN(0, y, 0, y + LR_H, AL_V, "rec layer key cell on its middle");
@@ -1246,7 +1269,8 @@ static void draw_layer(void)
     else if (l == LAYER_SCL)
         sig += (uint32_t)TSEL->p[P_SCALE] * 31u;
     else if (l == LAYER_REC)
-        sig += (uint32_t)ui_rec_prefs * 31u + (uint32_t)chain_busy() * 3u + (uint32_t)rec_clearable() * 5u + song.sel * 977u;
+        sig += (uint32_t)ui_rec_prefs * 31u + (uint32_t)chain_busy() * 3u + (uint32_t)rec_clearable() * 5u + song.sel * 977u +
+               take_ready(TSEL) * 65537u;                /* (DIRGE: TAKE's row) */
     else if (l == LAYER_SEQ)
         sig += (uint32_t)drum_track(TSEL) * 31u + ui.lane * 5u + (uint32_t)chain_busy() * 3u + (uint32_t)TSEL->p[P_E0] * 131u + song.sel * 977u +
                (eu.on ? 7u + eu.hits * 13u + eu.steps * 1031u + eu.rot * 65537u + (uint32_t)TSEL->p[P_SLEN] * 257u : 0u);

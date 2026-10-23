@@ -79,7 +79,9 @@ found INSERT's distortions and the chord keys already in DIRGE.)
    INSERT 2; BY reuses the unused id 8, DEPTH / REL are new: P_COUNT 113). FUN10 is now full for track parameters, so
    anything per-track after this (DRIVE's two, ENV 2) needs a format step: plan it with the six-track format (5).
 2. **Preset tags / LIST** and the **ENV 2** page, if wanted after trying Skiff's.
-3. **8-level undo and TAKE** (`ui.c`, `take.c`): CPU-check the ISR note log against `tests/target_budget.txt`.
+3. **8-level undo and TAKE** (`ui.c`, `take.c`): CPU-check the ISR note log against `tests/target_budget.txt`. **Done**:
+   an 8-copy undo ring in the pool (SAVE held as before, then OCT- / OCT+ for 3 s); TAKE on REC held + C4
+   (`firmware/src/dirge/take.c`, `take_commit.c`; Skiff's SHIFT is HOME held, DIRGE's MENU).
 4. **Voice budget 12 on two cores** (Skiff 1.3's VOICE_BUDGET), before any track-count change.
 5. **Design note, then build**: six tracks + the RAM / POOL split + a new project format. CPU-test DRONE + VAULT +
    TAPE with six tracks running.
@@ -120,7 +122,7 @@ work
 | Automation | SEQ > AUTOMATION | the same | — | **Have** |
 | Song mode | Felucca song chain | 64-pattern pool, lists A..P, scenes | slots A..D | **Port** after a design note (6) |
 | Performance | PERFORM (FX layer, throws) | PERFORM, 16 scenes | freeze, throws, tape stop, stutter | **Have**; scenes come with the pool (6) |
-| Undo / TAKE | one-step undo | 8-level undo, TAKE | — | **Port** both (3) |
+| Undo / TAKE | 8-level undo, TAKE (from Skiff) | 8-level undo, TAKE | — | **Done** (3) |
 | Noise | NOISE engine + DIRGE noise DSP | NOISE engine | — | **Have** (the same Felucca-Engines NOISE) |
 | Drums | DRUM | DRUM + DRUM-X | — | optional **Port** as engine 15 (8) |
 | Themes | BLOOD CRYPT NEON | SKIFF HI-CON PAPER CRYPT NEON QUARK | pixel-brutalist | **Build** plague doctor (9) |

@@ -1702,6 +1702,13 @@ static void ui_input(void)
             uint32_t both = (1u << panel.btn[B_OCTDN]) | (1u << panel.btn[B_OCTUP]);
             if (act_cols() || layer_set_open() || ui.ml.on)   /* action pages: enter / back (below); SET layers: OCT-; */
                 break;                                  /* MIDI LEARN: clear / done (below) */
+            if (ui.undo_t && fm1_ms - ui.undo_t < UNDO_WIN_MS && (fm1_in.buttons & both) != both) {
+                if (chain_busy())                       /* DIRGE: the undo window (ui.c undo_step): OCT- one further */
+                    ui_message("STOP TO UNDO");         /* back, OCT+ one forward; the octave stays */
+                else
+                    undo_step(b == B_OCTUP);
+                break;
+            }
             if ((fm1_in.buttons & both) == both)
                 song.octave = 0;
             else

@@ -835,10 +835,122 @@ static int auto_list(void)
     ui_prefs &= ~PREF_LARGE;
     return bad;
 }
+/* DIRGE: TAKE (dirge/take.c, take_commit.c; Skiff's TAKES, its tests): played with REC off, logged by pass; REC held +
+ * C4 puts the last whole pass into the track as REC would (a held note tied, an overdub), its knob moves as automation,
+ * one undo */
+static int tk_has(const track_t *t, uint32_t note)   /* a step of t holds note */
+{
+    uint32_t i, k;
+    for (i = 0; i < NSTEP; i++)
+        for (k = 0; k < t->step[i].n && k < 4u; k++)
+            if (t->step[i].note[k] == note) return 1;
+    return 0;
+}
+static track_t *tk_track(void)                        /* track 1: 8 empty steps, REV 20, selected, REC off */
+{
+    track_t *t;
+    uint32_t i;
+    ui_power_on();
+    t = &trk[0];
+    track_defaults_steps(t);
+    t->p[P_SLEN] = 8;
+    t->p[P_AMODE] = 0;
+    t->p[P_REV] = 20;
+    for (i = 0; i < NSTEP; i++)
+        t->step[i] = (step_t){{0}, 0, ST_REST};
+    motion_clear(t);
+    song.sel = 0;
+    song.rec = 0;
+    return t;
+}
+/* the take said in the header: "TAKE T1 n NOTES" ("TAKE T1 PARTIAL": the log ran over) */
+static int take_said(int partial)
+{
+    return partial ? str_eq(ui.msg, "TAKE T1 PARTIAL") : ui.msg[0] == 'T' && ui.msg[5] == 'T' && ui.msg[6] == '1' &&
+                     ui.msg[7] == ' ' && ui.msg[8] >= '1' && ui.msg[8] <= '9';
+}
+static int takes(void)
+{
+    int bad = 0, ok;
+    uint32_t i, e;
+    track_t *t = tk_track();
+    seq_start();
+    seq_tick(t, CTL);                                 /* pass 0, step 1 */
+    input_on(t, 60, 100);                             /* C4, held .. */
+    lock_next(t); lock_next(t);
+    input_off(t, 60);                                 /* .. let go early in step 3: a TIE in step 2 only */
+    lock_next(t);
+    motion_capture(t, P_REV, 77);                     /* a knob move in step 4 */
+    for (i = 0; i < 5u; i++) lock_next(t);            /* pass 1, step 1 */
+    input_on(t, 72, 100); input_off(t, 72);           /* a stray note in pass 1: not the take */
+    take_commit(0);
+    for (e = 0; e < motion.count && motion.event[e].place != 3u; e++) ;
+    ok = t->step[0].time == ST_NOTE && t->step[0].n == 1u && t->step[0].note[0] == 60 && t->step[1].time == ST_TIE &&
+         t->step[2].time == ST_REST && !tk_has(t, 72) && e < motion.count && MOTION_ID(&motion.event[e]) == P_REV &&
+         motion.event[e].value == 77 && take_said(0);
+    bad += check("takes: pass 1's note in step 1, held into step 2 (TIE), pass 2's note left out, the knob move "
+                 "automation in step 4; TAKE T1", ok);
+    undo_step(0);
+    bad += check("takes:   SAVE held (undo): the steps and the automation as before the take",
+                 !t->step[0].n && t->step[1].time == ST_REST && motion_count(t) == 0u);
+    seq_stop();
+
+    t = tk_track();
+    t->step[1] = (step_t){{64}, 1, ST_NOTE, 0, 90};   /* a note there already: kept (a take adds) */
+    seq_start(); seq_tick(t, CTL);
+    input_on(t, 60, 100);
+    for (i = 0; i < 4u; i++) lock_next(t);
+    input_off(t, 60);
+    for (i = 0; i < 4u; i++) lock_next(t);            /* pass 2 */
+    take_commit(0);
+    bad += check("takes:   an overdub: a held note ties into empty steps only, the note there stays",
+                 t->step[0].note[0] == 60 && t->step[1].time == ST_NOTE && t->step[1].note[0] == 64 &&
+                 t->step[2].time == ST_TIE && t->step[3].time == ST_TIE && t->step[4].time == ST_REST);
+    seq_stop();
+
+    t = tk_track();
+    song.rec = 1;
+    seq_start(); seq_tick(t, CTL);
+    input_on(t, 62, 100); input_off(t, 62);
+    bad += check("takes:   an armed track: REC records it, nothing logged", take_ev_n == 0u && tk_has(t, 62));
+    seq_stop();
+
+    t = tk_track();
+    seq_start(); seq_tick(t, CTL);
+    take_commit(0);
+    ok = str_eq(ui.msg, "PLAY ONE LOOP FIRST");
+    for (i = 0; i < 8u; i++) lock_next(t);
+    take_commit(0);
+    bad += check("takes:   before a whole pass: PLAY ONE LOOP FIRST; a pass with nothing played: NOTHING PLAYED, no change",
+                 ok && str_eq(ui.msg, "NOTHING PLAYED") && !t->step[0].n);
+    seq_stop();
+
+    t = tk_track();
+    seq_start(); seq_tick(t, CTL);
+    for (i = 0; i < 140u; i++) { input_on(t, 48u + i % 24u, 100); input_off(t, 48u + i % 24u); }   /* 280 entries */
+    for (i = 0; i < 8u; i++) lock_next(t);
+    take_commit(0);
+    bad += check("takes:   more than the log holds in a pass: the rest taken, TAKE T1 PARTIAL", take_said(1));
+    seq_stop();
+
+    t = tk_track();                                   /* REC held + C4 by the buttons and keys: the take; REC not armed */
+    go_home(); frame();
+    seq_start(); seq_tick(t, CTL);
+    input_on(t, 65, 100); input_off(t, 65);
+    for (i = 0; i < 8u; i++) lock_next(t);
+    btn_down(B_REC); frame(); frame();
+    key_down(white(4)); frame(); key_up(white(4)); frame();   /* (C4: the fifth white key from F3) */
+    btn_up(B_REC); frame(); frame();
+    bad += check("takes:   REC held + C4: the take; REC stays off, no note played, HOME stays",
+                 tk_has(t, 65) && take_said(0) && !song.rec && ui.home && !ui.menu);
+    seq_stop();
+    return bad;
+}
 int main(void)
 {
     int bad = motion_recording() + motion_capacity() + probability_playback() + compact_project() + fun7_89() + loads_and_song() + repeat_mode();
     bad += arp_new_modes();
     bad += lock_playback() + lock_edit() + lock_project() + lock_ui() + lock_undo() + auto_list();
+    bad += takes();                                   /* DIRGE: TAKE (dirge/take.c, take_commit.c) */
     printf("%s\n", bad ? "MOTION TEST FAILED" : "motion/chance/compact storage tests passed"); return bad != 0;
 }

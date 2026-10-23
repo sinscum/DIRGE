@@ -182,6 +182,8 @@ static struct {
     uint8_t tl_clean;            /* SAVE > TOOLS: KNOB 2 turned on past INIT, CLEAN INIT picked (1.5.5, #190) */
     uint32_t rec_t0;             /* REC press time: a tap arms (btn_hold, no hold: held, REC opens its layer) */
     uint32_t save_t0;           /* SAVE press time (btn_hold: held = UNDO) */
+    uint32_t undo_t;            /* DIRGE: the last undo / redo's time | 1 (0: none): OCT- / OCT+ step the ring until
+                                 * UNDO_WIN_MS after it (ui_input.c) */
     uint8_t confirm;             /* the OCT- / OCT+ dialog: CF_*, 0 = none */
     uint8_t confirm_trk;         /* the track it clears, the slot it overwrites */
     uint8_t uslot;               /* SAVE > USER: the selected user preset slot */
@@ -861,7 +863,7 @@ static int seq_is_empty(const track_t *t)
  * A sound load keeps the track's motion on the parameters every engine has (load_end, motion.c motion_sound_loaded);
  * a pattern load drops it all (the steps it was on are gone) */
 enum { UNDO_SOUND = 1, UNDO_PAT = 2, UNDO_MOT = 4 };
-static struct {
+typedef struct {
     uint8_t trk;                 /* track + 1, 0 = nothing to undo */
     uint8_t keep;                /* the track is as the last load left it (undo.after): a next load keeps the copy */
     uint8_t what;                /* UNDO_SOUND | UNDO_PAT: what the loads since the copy changed (undo_swap) */
@@ -876,7 +878,27 @@ static struct {
     uint32_t from_h;             /* pat_from_h[], pat_from[] of the copy (the header's slot letter) */
     uint8_t from;
     uint32_t t_ms;               /* time of the last load (the editor's SETs after it belong to it) */
-} undo __attribute__((section(".pool")));   /* (main loop only: off the audio code's .bss) */
+} undo_t;
+/* DIRGE (after Skiff's undo ring): UNDO_N copies in a ring, the newest at undo_top; undo_back of the newest are undone
+ * (each then holds the track as it was after it: its redo, a copy being one swap). `undo` is the newest: loads in a row
+ * share it as before. A new copy drops the undone ones (a new edit ends the redo); the oldest goes when all UNDO_N are
+ * used. SAVE held: undo the newest, held again: redo it (as Felucca's one copy); in the window after (UNDO_WIN_MS),
+ * OCT- one further back, OCT+ one forward (undo_step, ui_input.c). In the main loop's pool (off the audio code's .bss) */
+#define UNDO_N 8u
+#define UNDO_WIN_MS 3000u
+static undo_t undo_ring[UNDO_N] __attribute__((section(".pool")));
+static uint8_t undo_n, undo_top, undo_back;
+#define undo (undo_ring[undo_top])
+static void undo_clear(void) { undo_n = undo_back = 0; undo.trk = 0; }   /* (a project load: the old project's) */
+static void undo_push(void)                       /* a new copy: the caller fills `undo` */
+{
+    ui.undo_t = 0;                                /* (the undo window closes: OCT- / OCT+ are the octave again) */
+    undo_n = (uint8_t)(undo_n - undo_back);
+    undo_top = (uint8_t)((undo_top + UNDO_N - undo_back + 1u) % UNDO_N);
+    undo_back = 0;
+    if (undo_n < UNDO_N)
+        undo_n++;
+}
 static uint8_t undo_depth;       /* loads nest (an engine jump loads its first preset): the outer one counts;
                                   * felucca_init / project_load raise it to take no copy at all */
 static uint32_t pat_sig[NTRK];   /* steps_sig of the pattern the last pattern load put into each track: such
@@ -981,11 +1003,12 @@ static void load_begin(track_t *t, uint32_t what)
     if (undo_depth++)
         return;
     motion_restore(t);
-    if (undo.keep && undo.trk == i + 1u && !(undo.what & UNDO_MOT) && track_sig(t) == undo.after) {
+    if (undo_n && !undo_back && undo.keep && undo.trk == i + 1u && !(undo.what & UNDO_MOT) && track_sig(t) == undo.after) {
         undo.what |= (uint8_t)what;               /* browsing on: the copy from before the first load stays */
         load_motion_hold(t, what);
         return;
     }
+    undo_push();                                  /* (DIRGE: a new copy in the ring) */
     undo.trk = (uint8_t)(i + 1u);
     undo.what = (uint8_t)what;
     undo.eng = t->eng_req;
@@ -1019,11 +1042,14 @@ static void load_end(track_t *t)
     undo.t_ms = fm1_ms;
 }
 
+#include "dirge/take_commit.c"                       /* DIRGE: REC held + C4, TAKE into the track */
+
 /* the editor's SET right after a load on the selected track (an audition: G_ENGSEL, then the patch's
  * values): part of that load, the copy from before it stays */
 static void load_extend(track_t *t)
 {
-    if (undo.keep && undo.trk == trk_index(t) + 1u && !(undo.what & UNDO_MOT) && fm1_ms - undo.t_ms < 1500u) {
+    if (undo_n && !undo_back && undo.keep && undo.trk == trk_index(t) + 1u && !(undo.what & UNDO_MOT) &&
+        fm1_ms - undo.t_ms < 1500u) {
         undo.after = track_sig(t);
         undo.t_ms = fm1_ms;
     }
@@ -1040,10 +1066,11 @@ static uint32_t edit_sig(const track_t *t) { return undo.what & UNDO_PAT ? motio
 static void edit_undo_take(track_t *t, uint32_t tag, uint32_t what)
 {
     uint32_t i = trk_index(t);
-    if (tag && tag == undo_mot_tag && undo.keep && undo.trk == i + 1u && undo.what == what &&
+    if (tag && tag == undo_mot_tag && undo_n && !undo_back && undo.keep && undo.trk == i + 1u && undo.what == what &&
         edit_sig(t) == undo.after && fm1_ms - undo.t_ms < 1500u)
         return;
     undo_mot_tag = tag;
+    undo_push();                                  /* (DIRGE: a new copy in the ring) */
     undo.trk = (uint8_t)(i + 1u);
     undo.what = (uint8_t)what;
     undo.eng = t->eng_req;
@@ -1073,87 +1100,116 @@ static void motion_undo_done(track_t *t)
 
 static int param_kept(uint32_t i);
 
-/* SAVE held: what the loads changed (undo.what) and the copy change places, so held again = the loads
+/* SAVE held: what the loads changed (c->what) and the copy change places, so held again = the loads
  * again. The sound: engine, preset and its parameters (not param_kept); the pattern: the steps and LEN
  * DIV SWING GATE. The mix (LEVEL PAN MUTE) stays: no load changes it */
-static void undo_swap(void)
+static int undo_swap_c(undo_t *c)
 {
     track_t *t;
     uint32_t i;
-    char b[4] = {'T', 0, 0, 0};
-    if (!undo.trk) {
-        ui_message("NOTHING TO UNDO");
-        return;
-    }
-    t = &trk[(undo.trk - 1u) % NTRK];
+    t = &trk[(c->trk - 1u) % NTRK];
     motion_restore(t);
     motion_store_t current_motion;
     motion_snapshot_track(t, &current_motion);
-    if (motion_replace_track(t, &undo.motion_backup) != 0) {
+    if (motion_replace_track(t, &c->motion_backup) != 0) {
         ui_message("AUTOMATION FULL");
-        return;
+        return 0;
     }
-    undo.motion_backup = current_motion;
+    c->motion_backup = current_motion;
     fm1_irq_off();                                /* the audio ISR must not see half a sound */
-    if (undo.what & UNDO_SOUND) {
+    if (c->what & UNDO_SOUND) {
         uint8_t e = t->eng_req, pr = t->preset, u = t->user;
         panic_req |= (uint8_t)(1u << trk_index(t));
-        t->eng_req = undo.eng;
-        t->preset = undo.preset;
-        t->user = undo.user;
-        undo.eng = e;
-        undo.preset = pr;
-        undo.user = u;
+        t->eng_req = c->eng;
+        t->preset = c->preset;
+        t->user = c->user;
+        c->eng = e;
+        c->preset = pr;
+        c->user = u;
         for (i = 0; i < P_COUNT; i++)
             if (!param_kept(i)) {
                 int16_t v = t->p[i];
-                t->p[i] = undo.p[i];
-                undo.p[i] = v;
+                t->p[i] = c->p[i];
+                c->p[i] = v;
             }
     }
-    if (undo.what & UNDO_PAT) {
+    if (c->what & UNDO_PAT) {
         uint32_t ps = pat_sig[trk_index(t)];
         uint8_t pn = pat_last[trk_index(t)];
-        pat_sig[trk_index(t)] = undo.pat;
-        undo.pat = ps;
-        pat_last[trk_index(t)] = undo.patn;
-        undo.patn = pn;
+        pat_sig[trk_index(t)] = c->pat;
+        c->pat = ps;
+        pat_last[trk_index(t)] = c->patn;
+        c->patn = pn;
         pn = pat_from[trk_index(t)];
         ps = pat_from_h[trk_index(t)];
-        pat_from[trk_index(t)] = undo.from;
-        pat_from_h[trk_index(t)] = undo.from_h;
-        undo.from = pn;
-        undo.from_h = ps;
+        pat_from[trk_index(t)] = c->from;
+        pat_from_h[trk_index(t)] = c->from_h;
+        c->from = pn;
+        c->from_h = ps;
         for (i = P_SLEN; i <= P_SGATE; i++) {
             int16_t v = t->p[i];
-            t->p[i] = undo.p[i];
-            undo.p[i] = v;
+            t->p[i] = c->p[i];
+            c->p[i] = v;
         }
         for (i = 0; i < NSTEP; i++) {
             step_t s = t->step[i];
-            t->step[i] = undo.step[i];
-            undo.step[i] = s;
+            t->step[i] = c->step[i];
+            c->step[i] = s;
         }
     }
     fm1_irq_on();
-    if (undo.what & UNDO_SOUND) {                 /* FM6: the track's patch as it was (edited, a project's, a
+    if (c->what & UNDO_SOUND) {                 /* FM6: the track's patch as it was (edited, a project's, a
                                                    * converted DIGITAL sound), not a factory one */
         uint32_t tr = trk_index(t);
         uint8_t v[FP_SIZE + 1u], sl = fm6_slot[tr];
         memcpy(v, fm6_patch[tr], FP_SIZE);
-        fm6_set_patch(tr, undo.fm6);
-        fm6_slot[tr] = undo.fm6_slot;             /* (fm6_poll: the patch stays) */
+        fm6_set_patch(tr, c->fm6);
+        fm6_slot[tr] = c->fm6_slot;             /* (fm6_poll: the patch stays) */
         fm6_own_ok &= (uint8_t)~(1u << tr);
-        memcpy(undo.fm6, v, FP_SIZE);
-        undo.fm6_slot = sl;
+        memcpy(c->fm6, v, FP_SIZE);
+        c->fm6_slot = sl;
     }
-    undo.keep = 0;                                /* the next load copies the track as it is now */
+    c->keep = 0;                                /* the next load copies the track as it is now */
     if (t == TSEL)
         sync_reload = 1;
-    b[1] = (char)('1' + trk_index(t));
-    ui_say("UNDO/REDO ", b);
     ui.force = 1;
+    return 1;
 }
+
+/* DIRGE: one step of the ring. redo 0: back one (the copy undo_back from the newest), 1: forward one (the last one
+ * undone). SAVE held: back when nothing is undone, else forward (Felucca's undo / redo of its one copy); OCT- / OCT+ in
+ * the window after it (ui.undo_t, ui_input.c): further back / forward. The header says which track, and how far back */
+static void undo_step(int redo)
+{
+    undo_t *c;
+    char b[16] = "T1 (0/8)";
+    if (redo ? !undo_back : undo_back >= undo_n || !undo_ring[(undo_top + UNDO_N - undo_back) % UNDO_N].trk) {
+        ui_message(redo ? "NOTHING TO REDO" : "NOTHING TO UNDO");
+        return;
+    }
+    if (redo)
+        undo_back--;
+    c = &undo_ring[(undo_top + UNDO_N - undo_back) % UNDO_N];
+    if (!undo_swap_c(c)) {
+        if (redo)
+            undo_back++;
+        return;
+    }
+    if (!redo)
+        undo_back++;
+    b[1] = (char)('1' + (c->trk - 1u) % NTRK);
+    b[4] = (char)('0' + undo_back);
+    b[6] = (char)('0' + undo_n);
+    if (undo_n == 1u) {                           /* (one copy: Felucca's "UNDO/REDO T1") */
+        b[2] = 0;
+        ui_say("UNDO/REDO ", b);
+    } else {                                      /* "UNDO T1 (2/8)": two of the eight copies undone */
+        ui_say(redo ? "REDO " : "UNDO ", b);
+        str_cpy(ui.msg2, "[OCT-] BACK [OCT+] REDO", sizeof ui.msg2);
+    }
+    ui.undo_t = fm1_ms | 1u;
+}
+static void undo_swap(void) { undo_step(undo_back != 0u); }   /* SAVE held (and the EDIT layer's OCT-) */
 
 /* a 16-step pattern (PATTERNS[] format, user presets too) into steps 1..16, the rest empty, LEN 16 */
 static void load_pat16(track_t *t, const uint8_t *note, const uint8_t *flags)

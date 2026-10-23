@@ -294,6 +294,16 @@ static uint8_t stored_note(uint32_t slot, uint32_t track, uint32_t step)
     return proj_import(&p, &proj_slot[slot], sizeof proj_slot[slot]) ? p.t[track].step[step].note[0] : 0;
 }
 static int msg_is(const char *s) { return ui.msg_t && str_eq(ui.msg, s); }
+/* DIRGE: an undo / redo's header on track tr: "UNDO/REDO T1" (one copy), "UNDO T1 (1/3)", "REDO T1 (0/3)" (the ring) */
+static int undo_msg(const char *tr)
+{
+    const char *m = ui.msg;
+    if (!ui.msg_t || !((m[0] == 'U' && m[1] == 'N') || (m[0] == 'R' && m[1] == 'E')))
+        return 0;
+    while (*m && !(m[0] == tr[0] && m[1] == tr[1]))
+        m++;
+    return *m != 0;
+}
 static void my_steps(track_t *t)                  /* "recorded" steps */
 {
     uint32_t i;
@@ -447,7 +457,7 @@ static int test_sound_loads(void)
     t->step[0].note[0] = 99;                      /* recorded after the loads */
     hold(B_SAVE);
     bad += check("SAVE held: the sound back (UNDO/REDO T1); steps recorded since stay", same_sound(t, &before) &&
-                 t->step[0].note[0] == 99 && msg_is("UNDO/REDO T1"));
+                 t->step[0].note[0] == 99 && undo_msg("T1"));
     bad += check("SAVE held does not open the SAVE pages", ui.home);
     hold(B_SAVE);
     bad += check("SAVE held again: the loads again (redo)", t->eng_req != before.eng_req && t->step[0].note[0] == 99);
@@ -3286,7 +3296,7 @@ static int test_layer(void)
     ok = transport_req == 1u && ui.layer == LAYER_FX;
     transport_req = 0;
     press(B_SAVE); ok &= ui.home;
-    hold(B_SAVE); ok &= !msg_is("UNDO/REDO T1") && ui.home;
+    hold(B_SAVE); ok &= !undo_msg("T1") && ui.home;
     press(B_ENV); ok &= ui.home;
     hold(B_HOME); ok &= !ui.menu && ui.home;
     btn_up(B_FX); frame();
@@ -9155,7 +9165,7 @@ static int test_fm6_ops(void)
           fm6_patch[tr][at] == before[at] - 7u && slot_own() && fop_op == 2u;
     bad += check("FM6 ops: OPERATOR KNOB 4 on OP 3: its LEVEL byte only; F5 -> SLOT OWN", ok);
     hold(B_SAVE);
-    ok = !memcmp(before, fm6_patch[tr], FP_SIZE) && TSEL->p[P_E7] == 4 && fm6_slot[tr] == 4u && msg_is("UNDO/REDO T2");
+    ok = !memcmp(before, fm6_patch[tr], FP_SIZE) && TSEL->p[P_E7] == 4 && fm6_slot[tr] == 4u && undo_msg("T2");
     hold(B_SAVE);
     ok &= fm6_patch[tr][3u * FP_OP + FP_OL] == before[3u * FP_OP + FP_OL] - 7u && slot_own();
     frames(1600);
@@ -9760,6 +9770,75 @@ static int test_duck_page(void)
     return bad;
 }
 
+/* DIRGE: the undo ring (ui.c undo_ring, undo_step; after Skiff's): sound loads on T1, T2, T1 are three copies. SAVE held
+ * undoes the newest, OCT- in the window after it goes further back, OCT+ forward; past the window OCT- is the octave
+ * again; a new load ends the redo; the ninth copy drops the oldest */
+static int test_undo_ring(void)
+{
+    int bad = 0, ok;
+    uint32_t i;
+    track_t a0, b0, a1;
+    ui_power_on();
+    undo_clear();                                       /* (the earlier tests' copies) */
+    go_home();
+    song.sel = 0; frame();
+    a0 = trk[0];
+    turn(EN_PRESET, 1);                                 /* copy 1: T1 */
+    song.sel = 1; frame();
+    b0 = trk[1];
+    turn(EN_PRESET, 1);                                 /* copy 2: T2 */
+    song.sel = 0; frame();
+    a1 = trk[0];
+    turn(EN_PRESET, 1);                                 /* copy 3: T1 again */
+    ok = undo_n == 3u && !undo_back;
+    hold(B_SAVE);
+    ok &= same_sound(&trk[0], &a1) && str_eq(ui.msg, "UNDO T1 (1/3)") && undo_back == 1u;
+    press(B_OCTDN);
+    ok &= same_sound(&trk[1], &b0) && str_eq(ui.msg, "UNDO T2 (2/3)") && song.octave == 0;
+    press(B_OCTDN);
+    ok &= same_sound(&trk[0], &a0) && str_eq(ui.msg, "UNDO T1 (3/3)");
+    press(B_OCTDN);
+    ok &= msg_is("NOTHING TO UNDO") && same_sound(&trk[0], &a0) && song.octave == 0;
+    bad += check("undo ring: SAVE held, then OCT- twice: T1, T2, T1 back in turn (3 of 3); then nothing", ok);
+    press(B_OCTUP);
+    ok = same_sound(&trk[0], &a1) && str_eq(ui.msg, "REDO T1 (2/3)") && undo_back == 2u;
+    press(B_OCTUP);
+    ok &= !same_sound(&trk[1], &b0) && str_eq(ui.msg, "REDO T2 (1/3)");
+    hold(B_SAVE);                                       /* (something undone: SAVE held redoes) */
+    ok &= !same_sound(&trk[0], &a1) && str_eq(ui.msg, "REDO T1 (0/3)") && !undo_back;
+    bad += check("  OCT+ in the window redoes in turn; SAVE held with copies undone redoes the next", ok);
+    hold(B_SAVE);
+    hold(B_SAVE);                                       /* (undo, redo: SAVE held toggles as Felucca's) */
+    ok = !undo_back && !same_sound(&trk[0], &a1);
+    for (i = 0; i < 300u; i++)                          /* past the window (3 s) */
+        frame();
+    press(B_OCTDN);
+    ok &= song.octave == -1 && !undo_back;
+    press(B_OCTUP);
+    ok &= song.octave == 0;
+    bad += check("  SAVE held twice: undo, redo; past the window OCT- / OCT+ are the octave again", ok);
+    hold(B_SAVE);                                       /* one undone ... */
+    song.sel = 2; frame();
+    turn(EN_PRESET, 1);                                 /* ... and a new copy (T3): the undone one is gone */
+    ok = undo_n == 3u && !undo_back;
+    press(B_OCTUP);
+    ok &= song.octave == 1;                             /* (a new copy closes the window: the octave) */
+    press(B_OCTDN);
+    bad += check("  a new load ends the redo (the undone copy dropped) and closes the window", ok && song.octave == 0);
+    for (i = 0; i < 10u; i++) {                         /* ten more, on alternating tracks */
+        song.sel = (uint8_t)(i & 1u); frame();
+        turn(EN_PRESET, 1);
+    }
+    ok = undo_n == UNDO_N;
+    for (i = 0; i < UNDO_N; i++)
+        if (i) press(B_OCTDN); else hold(B_SAVE);
+    ok &= undo_back == UNDO_N && str_eq(ui.msg, "UNDO T1 (8/8)");
+    press(B_OCTDN);
+    ok &= msg_is("NOTHING TO UNDO");
+    bad += check("  at most 8 copies: the oldest go; eight back, then nothing", ok);
+    return bad;
+}
+
 static int test_edit_quick_actions(void)
 {
     int bad = 0, ok;
@@ -10031,6 +10110,7 @@ int main(void)
     bad += test_help();
     bad += test_no_flash();
     bad += test_duck_page();                         /* DIRGE: FX > DUCK */
+    bad += test_undo_ring();                         /* DIRGE: the undo ring */
 #if FELUCCA_FM4
     bad += test_fm_charts();                        /* (DIGITAL's charts: built with FELUCCA_FM4=1 only) */
 #else

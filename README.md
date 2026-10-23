@@ -48,6 +48,8 @@ Free and open source (GPL-3.0-only). Unofficial firmware, not made or endorsed b
   - **TAPE:** the whole mix through a worn cassette (wow, flutter, saturation, a high cut, hiss that follows the music)
   - **ROOM:** a dead channel's room tone under the mix (static, 50 Hz hum, crackle), into the reverb too
   - **WEAR:** the delay worn into a tape echo (wow and flutter on its read, darker, saturated repeats)
+- **TAKE** (from Skiff): play with REC off, then hold REC + C4 to keep the last loop you played (notes, holds, knob
+  moves) in the pattern. **8 levels of undo**: hold SAVE, then OCT− / OCT+ to step further back or forward.
 - **FX > DUCK** (ported from [Skiff](https://github.com/illuminus5/skiff)): a track ducks under another track's notes
   (a drum track's kick only), DEPTH and RELEASE: the sidechain pump for basses and drones.
 - **REVERB TYPE VAULT:** HALL stretched to ~32 s; at SIZE 127 **INF**, a freeze that holds what is in it.
@@ -86,7 +88,7 @@ idea.
 - **[The manual](MANUAL.md):** every button, page, layer and setting, and what DIRGE adds.
 - **Quick start:** switch on. Turn **ALGORITHM** to pick a track, turn **PRESETS** to pick a sound, play the keys.
   Press **PLAY** to hear the power-on scene. Tap a page button (ENV, LFO, FX, SCL, EDIT, ARP, SEQ) for its pages;
-  **hold** one for its quick layer. Hold **HOME** for the MENU. Hold **SAVE** to undo.
+  **hold** one for its quick layer. Hold **HOME** for the MENU. Hold **SAVE** to undo (OCT− for further back).
 - **MENU > SYSTEM > HELP ON** shows a short hint on every page.
 
 ## The editor and the demo
@@ -127,8 +129,8 @@ CI (`.github/workflows/ci.yml`) builds, runs every test, builds the emulator and
 ## Contributing and roadmap
 
 Bugs and ideas: [Issues](https://github.com/sinscum/DIRGE/issues) (see [CONTRIBUTING.md](CONTRIBUTING.md)); please
-report DIRGE's behaviour here, not in Felucca's tracker. Where DIRGE goes next (TAKE and deeper
-undo from [Skiff](https://github.com/illuminus5/skiff), a 12-voice budget, six tracks and a pattern pool, GR!MM-style
+report DIRGE's behaviour here, not in Felucca's tracker. Where DIRGE goes next (from
+[Skiff](https://github.com/illuminus5/skiff): a 12-voice budget, six tracks and a pattern pool, GR!MM-style
 HOME and latch): [docs/MERGE_PLAN.md](docs/MERGE_PLAN.md). The chip's rules and the project's conventions: [CLAUDE.md](CLAUDE.md).
 
 ## Upstream

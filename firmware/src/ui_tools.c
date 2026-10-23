@@ -32,6 +32,7 @@ static int tl_cell(const track_t *t, uint32_t p)
 static void tl_undo_take(track_t *t)
 {
     uint32_t i = trk_index(t);
+    undo_push();                                        /* (DIRGE: a new copy in the ring) */
     undo.trk = (uint8_t)(i + 1u);
     undo.what = UNDO_PAT;
     undo.keep = 0;                                      /* (the next load or action takes its own copy) */

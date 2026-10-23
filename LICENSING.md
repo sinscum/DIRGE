@@ -60,6 +60,7 @@ DIRGE is a fork of Felucca 1.6.1, GPL-3.0-only as a whole. Copyright (C) 2026 DI
 | --- | --- |
 | `firmware/src/eng_drone.c` (DRONE), `firmware/src/dirge/` (`dirge.h`, `noise.h`: the noise follows Felucca-Engines' `eng_noise.c`, MIT) | GPL-3.0-only |
 | `firmware/src/dirge/tape.c` (TAPE: GHOULBOX's `tape.c`, GPL-3.0, itself on Felucca's code) and `room.c` (ROOM: after GHOULBOX's `ambience.c`, GPL-3.0) | GPL-3.0-only |
+| `firmware/src/dirge/take.c`, `take_commit.c` (TAKE: after Skiff's `take.c`, `ui_take.c`, GPL-3.0-only); the undo ring in `ui.c` (after Skiff's) | GPL-3.0-only |
 | `firmware/src/dirge/duck.c` (DUCK: Skiff's `duck.c`, GPL-3.0-only, itself on Felucca's code) and `tests/duck_test.c` (Skiff's test, adapted) | GPL-3.0-only |
 | `tests/dirge/` (DIRGE's DSP tests) | GPL-3.0-only |
 | `web/emu/scope.js` and the room around the emulator in `web/emu/index.html` (the page itself is Felucca's, after X0X's) | GPL-3.0-only |

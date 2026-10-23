@@ -42,7 +42,9 @@ round). **Hold** a page button to open its **quick layer**: the keys and knobs b
 
 **Knobs speed up:** turn slowly for fine steps, quickly to sweep (MENU > CONTROL > KNOB ACCEL).
 
-**Undo:** hold **SAVE**. It undoes the last sound load, clear, sequence tool or recording.
+**Undo:** hold **SAVE**. It undoes the last sound load, clear, sequence tool, take or recording; hold it again to
+redo. DIRGE keeps the last **8** changes: for 3 seconds after an undo, **OCT−** goes one further back and **OCT+** one
+forward again (the header says how far: UNDO T2 (3/8)). After that OCT− and OCT+ are the octave again.
 
 **Momentary edits:** hold **LFO** and turn knobs on HOME, a sound page or an FX page; let go and every value snaps
 back. Press OCT+ while still holding LFO to keep the changes.
@@ -222,7 +224,14 @@ Each track has a pattern of up to **64 steps**.
 
 **Recording live:** press **REC** to arm the track, **PLAY** to start: the keys and knob moves you play go into the
 pattern. **Hold REC** for its layer: CLEAR (the track's steps and automation), CLICK (OFF / REC / ON), COUNT-IN
-(OFF / 1 BAR / 2 BARS) and the click level.
+(OFF / 1 BAR / 2 BARS), the click level, and **TAKE** (C4).
+
+**TAKE** (DIRGE, from Skiff): you don't have to arm REC to keep a good idea. While the sequencer plays, DIRGE quietly
+logs what you play on each track (the keys, MIDI, the arpeggiator) and your knob moves. **Hold REC and press C4** to
+put the last complete loop you played on the selected track into its pattern, as REC would have recorded it: notes
+into their steps (with their timing), held notes tied, knob moves as automation. It adds to what is there and never
+wipes a note. Hold SAVE to undo it. The REC map's TAKE row says if it can't yet (PLAY A LOOP, DISARM REC, STOP TO
+EDIT). The log starts fresh at each PLAY and holds about 128 notes; a busier loop is taken in part (TAKE PARTIAL).
 
 **Parameter locks:** open the sound page you want (HOME, ENV, LFO, FX, EDIT, ...), then on SEQ > STEP hold a step
 and turn KNOB 1–4: that step plays the locked value of the knob's parameter on that page. Tap EDIT while holding the
@@ -267,7 +276,7 @@ notes and record nothing.
 | **SCL** | any key: the root | | ROOT, SCALE, CHORD, VOICING |
 | **EDIT** | one engine per key, then INIT (E5) and CLEAN INIT (F5) | the engine's quick actions (DRUM: lane mutes) | ENGINE, SOUND, FAV |
 | **SEQ** | the sequence tools | DRUM lanes | LENGTH, DIV, SWING, GATE |
-| **REC** | CLEAR, CLICK, COUNT-IN, CLICK LEVEL | | CLICK, COUNT-IN, LEVEL |
+| **REC** | CLEAR, CLICK, COUNT-IN, CLICK LEVEL, TAKE (C4) | | CLICK, COUNT-IN, LEVEL |
 
 In the SET layers (GLO, SCL, EDIT, SEQ, REC), **OCT−** puts back whatever the layer changed since it opened.
 
@@ -345,7 +354,7 @@ oscilloscope: play it with the mouse, a touch screen or the computer keyboard. I
 | Combo | Does |
 |---|---|
 | Hold **HOME** | MENU |
-| Hold **SAVE** | Undo |
+| Hold **SAVE** | Undo (again: redo); then OCT− / OCT+ for 3 s: further back / forward, up to 8 |
 | Hold **LFO** + knobs | Momentary edits (OCT+ keeps them) |
 | Hold **FX** + white key | A performance effect |
 | Hold **FX** + black key | Mute T1–T4 while held |
@@ -357,6 +366,6 @@ oscilloscope: play it with the mouse, a touch screen or the computer keyboard. I
 | Hold **SCL** + key | Set the root |
 | Hold **EDIT** + white key | Switch engine |
 | Hold **SEQ** + white key | A sequence tool |
-| Hold **REC** + white key | CLEAR, CLICK, COUNT-IN, CLICK LEVEL |
+| Hold **REC** + white key | CLEAR, CLICK, COUNT-IN, CLICK LEVEL, TAKE (C4) |
 | Double-tap a layer button | Lock its layer open |
 | Hold **OCT−** at power-on | USB rescue |
