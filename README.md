@@ -24,7 +24,7 @@ Free and open source (GPL-3.0-only). Unofficial firmware, not made or endorsed b
 
 ## What's inside
 
-- **4 tracks**, 8 voices shared between them; per track MONO, LEGATO, UNISON and glide
+- **4 tracks**, 8 voices shared between them (12 with the second core on, beta); per track MONO, LEGATO, UNISON and glide
 - **14 engines:** DRONE (DIRGE's), ANALOG, PHASE, LOFI, SAMPLE, VOICE, TRIO, WHEEL, GRAIN, PHYS, DRUM, NOISE, FM6, SLICE
 - **Effects:** per-track DIST, INSERT (fold, crush, fuzz, phaser, ...), SLICER (a tempo-synced gate and stutter) and
   DUCK (sidechain); shared DELAY, CHORUS and REVERB

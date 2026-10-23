@@ -1077,12 +1077,7 @@ static __attribute__((noinline)) void perf_master(int32_t *out, uint32_t n)
  * shared generator, part by part: voice.c track_lfo_end). tests/dualcore_test.c checks it, under ThreadSanitizer too.
  * Without a second core (the host, the browser, MENU > 2ND CORE OFF, one that did not answer or stopped) C1_RUN takes
  * nothing and this core renders them all */
-#if FELUCCA_CPU2
-#ifndef C1_RUN
-#define C1_ON() 0                                       /* a second core is answering */
-#define C1_RUN(fn, arg) 0                               /* hand it fn(arg): 1 = taken */
-#define C1_WAIT() 0                                     /* wait for it: 0 = done */
-#endif
+#if FELUCCA_CPU2                                        /* (C1_ON C1_RUN C1_WAIT without a second core: core.h) */
 #ifndef C1_SPLIT
 #define C1_SPLIT() mix_split()
 #endif

@@ -34,7 +34,8 @@ Felucca. To build it or change it, see [BUILDING.md](BUILDING.md) and [CLAUDE.md
 ## 2. The basics
 
 DIRGE has **four tracks (T1–T4)**. Each plays one engine with its own sound, envelope, LFO, effects sends, scale,
-arpeggiator and 64-step pattern. The four share **eight voices**.
+arpeggiator and 64-step pattern. The four share **eight voices**, or **twelve** with MENU > SYSTEM > 2ND CORE ON
+(beta: the FM-1's second processor core renders some of the tracks; it takes effect from the next power-on).
 
 **Tap, hold, double-tap.** Tap a page button to open its first page; tap it again for its next page (the pages go
 round). **Hold** a page button to open its **quick layer**: the keys and knobs become its shortcuts while you hold it
@@ -300,7 +301,7 @@ Hold **HOME**. ALGORITHM picks the tab, PRESETS the row, any of KNOB 1–4 or OC
 | **CONTROL** | HOLD (layer timing), KNOB ACCEL, FX LATCH, BPM LOCK, SCALE LEDS, STEP PREVIEW, CHORD ENTRY, SELECT (BPM / PAGE / MODW / VEL) |
 | **AUDIO** | SPEAKER EQ, USB LEVEL, CLICK, CLICK LEVEL, COUNT-IN, TUNE, **KEYS**, **SPLIT** |
 | **MIDI** | MIDI IN, T1–T4 CHANNEL, AUTO SELECT, SCREEN WAKE, LEARN CLEAR |
-| **SYSTEM** | USB SERIAL, RESTORE LAST, HELP, **SCENE**, 2ND CORE (beta), CALIBRATION, INFO, ABOUT |
+| **SYSTEM** | USB SERIAL, RESTORE LAST, HELP, **SCENE**, 2ND CORE (beta; ON: 12 voices instead of 8), CALIBRATION, INFO, ABOUT |
 
 **KEYS / SPLIT** (DIRGE, saved with the project): **LAYER** plays the selected track and a second track from every
 key; **SPLIT** plays a second track from the keys under the split point (C4 by default) and the selected track above

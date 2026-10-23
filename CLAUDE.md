@@ -13,7 +13,7 @@ Nobody covers **noise and darksynth**: aggressive mono basses, chaos and feedbac
 
 ## Platform
 
-DIRGE is a **fork of Felucca 1.6.1** (hugelton/Felucca, GPL-3.0), with Felucca's history merged in (remote `felucca`), so its fixes merge in. Lineage: Felucca → SLOOP → Dinghy → foma. DIRGE started on foma and moved to Felucca for its instrument core: 4 tracks sharing 8 voices (`core.h` NVOICE; Skiff's 12 on two cores is not in DIRGE yet), MONO / LEGATO / UNISON and glide, the sequencer and song chain, the modulation matrix, MIDI clock in (USB and TRS: needed for the Digitakt II and Digitone II), projects, presets, the web editor and installer. GHOULBOX is also a Felucca fork; GR!MM (Dinghy) has no mono / glide and no clock in.
+DIRGE is a **fork of Felucca 1.6.1** (hugelton/Felucca, GPL-3.0), with Felucca's history merged in (remote `felucca`), so its fixes merge in. Lineage: Felucca → SLOOP → Dinghy → foma. DIRGE started on foma and moved to Felucca for its instrument core: 4 tracks sharing 8 voices (`core.h` NVOICE; VOICE_BUDGET 12 while the second core runs, Skiff's), MONO / LEGATO / UNISON and glide, the sequencer and song chain, the modulation matrix, MIDI clock in (USB and TRS: needed for the Digitakt II and Digitone II), projects, presets, the web editor and installer. GHOULBOX is also a Felucca fork; GR!MM (Dinghy) has no mono / glide and no clock in.
 
 - Felucca's author has stepped back (occasional maintenance). Felucca-Engines (`firmware/engines/`, a git submodule, MIT) is still maintained.
 - Keep DIRGE's changes to Felucca's files small and mark them `DIRGE`; DIRGE's own code goes in its own files (`firmware/src/eng_*.c` engines, `firmware/src/dirge/`).

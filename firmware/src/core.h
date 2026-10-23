@@ -28,6 +28,23 @@
                                             * second core (mod.c, voice.c SPREAD, eng_formant.c): one each with two cores,
                                             * one for all with one, as up to 1.6 */
 #define C1_PI(t) ((uint32_t)((t) - trk) % C1_NP)   /* a part's copy */
+#if FELUCCA_CPU2 && !defined(C1_RUN)              /* (no second core here: the host's tests, the browser; felucca.c and
+                                                  * tests/c1_host.h define their own before this) */
+#define C1_ON() 0                                 /* a second core is answering */
+#define C1_RUN(fn, arg) 0                         /* hand it fn(arg): 1 = taken */
+#define C1_WAIT() 0                               /* wait for it: 0 = done */
+#endif
+/* DIRGE (Skiff 1.3's): the voices that sound at once across the parts (voice.c voice_room, voice_alloc): NVOICE with
+ * one core; VOICES_2CORE while the second core runs (C1_ON: MENU > SYSTEM > 2ND CORE ON and it answered), the room its
+ * render gives. A part still has NVOICE of its own (track_t.v); audio.c's shedding still guards the load either way */
+#ifndef VOICES_2CORE
+#define VOICES_2CORE 12u
+#endif
+#if FELUCCA_CPU2
+#define VOICE_BUDGET (C1_ON() ? VOICES_2CORE : NVOICE)
+#else
+#define VOICE_BUDGET NVOICE
+#endif
 #define NENGINES (14 + FELUCCA_SLICE)   /* SLICE (13), then DIRGE's DRONE: the other engines keep their numbers */
 #define ENGI_DIGITAL 1u          /* reserved without FELUCCA_FM4: never selectable (eng_ok), its sounds load as FM6 */
 #define ENGI_DRONE (13u + FELUCCA_SLICE)   /* DIRGE's DRONE, after SLICE */

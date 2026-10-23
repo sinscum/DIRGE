@@ -386,15 +386,20 @@ if [ -f build/gen/felucca_tables.h ]; then
         "$OUT/regress_cpu2_0" tests/golden.txt tests/cpu_baseline.txt
     # the second core (2ND CORE ON: fx.c mix_block, tests/c1_host.h): a thread renders the parts handed to it, bit for
     # bit
-    $CC -O2 -w -Ibuild/gen -Ifirmware/src -DC1_HOST -pthread -o "$OUT/regress_c1" tests/regress.c -lm
+    # (DIRGE: built with -DVOICES_2CORE=8, the two cores' voice budget as one core's, so the renders can be the same;
+    # the budget of 12 itself: dualcore_budget below)
+    $CC -O2 -w -Ibuild/gen -Ifirmware/src -DC1_HOST -DVOICES_2CORE=8 -pthread -o "$OUT/regress_c1" tests/regress.c -lm
     run "second core: the golden renders with a thread taking every split of the parts in turn" \
         "$OUT/regress_c1" tests/golden.txt tests/cpu_baseline.txt
-    $CC -O2 -w -Ibuild/gen -Ifirmware/src -pthread -o "$OUT/dualcore_test" tests/dualcore_test.c -lm
+    $CC -O2 -w -Ibuild/gen -Ifirmware/src -DVOICES_2CORE=8 -pthread -o "$OUT/dualcore_test" tests/dualcore_test.c -lm
     run "second core: 4 parts of every preset, mixes: bit for bit on one core and on two, every split" \
         "$OUT/dualcore_test"
+    $CC -O2 -w -Ibuild/gen -Ifirmware/src -pthread -o "$OUT/dualcore_budget" tests/dualcore_test.c -lm
+    run "second core (DIRGE, Skiff's): the voice budget, 8 on one core, VOICES_2CORE (12) with two" \
+        env BUDGET=1 "$OUT/dualcore_budget"
     if [ -n "$TSAN" ]; then                     # TSAN=1: the same under ThreadSanitizer (~6 min): shared state
         TSAN_CC="cc -O1 -g -w -Ibuild/gen -Ifirmware/src -fsanitize=thread -pthread"
-        $TSAN_CC -o "$OUT/dualcore_tsan" tests/dualcore_test.c -lm
+        $TSAN_CC -DVOICES_2CORE=8 -o "$OUT/dualcore_tsan" tests/dualcore_test.c -lm
         run "second core under ThreadSanitizer: 4 parts of every preset, mixes" \
             env TSAN_OPTIONS=halt_on_error=1 "$OUT/dualcore_tsan"
     fi

@@ -118,8 +118,34 @@ static uint64_t render_fork(const scen_t *sc, int dual, const char *mask, uint32
     return h;
 }
 
+/* DIRGE (Skiff 1.3's): the voice budget (core.h VOICE_BUDGET): 8 across the parts on one core, VOICES_2CORE while the
+ * second core runs; four POLY parts of three notes each (12). Run with BUDGET=1, built without -DVOICES_2CORE=8
+ * (run_tests.sh: the bit-for-bit comparisons are built with it, the two budgets alike) */
+static int voice_budget(void)
+{
+    uint32_t pass, k, i, n[2], want = VOICES_2CORE < 12u ? VOICES_2CORE : 12u;
+    int32_t o[2 * CTL];
+    for (pass = 0; pass < 2u; pass++) {
+        host_tracks_init();
+        c1h_off = !pass;
+        for (k = 0; k < 4u; k++) {
+            host_preset(&trk[k], 0u, 1u);           /* (ANALOG's second preset: POLY) */
+            trk[k].p[P_VOICE] = V_POLY;
+            for (i = 0; i < 3u; i++)
+                trk_note_on(&trk[k], 48u + 12u * k + 4u * i, 100);
+        }
+        mix_block(o, CTL);
+        n[pass] = voices_busy();
+    }
+    printf("dualcore: voice budget: %u voices on one core, %u with the second (VOICES_2CORE %u)   %s\n", n[0], n[1],
+           (unsigned)VOICES_2CORE, n[0] == NVOICE && n[1] == want ? "ok" : "FAIL");
+    return !(n[0] == NVOICE && n[1] == want);
+}
+
 int main(void)
 {
+    if (getenv("BUDGET"))
+        return voice_budget();
     static scen_t sc[256];
     static char names[256][40];
     static const char *const MASKS[] = {"rot", "auto", "5", "10", "3", "12", "1"};

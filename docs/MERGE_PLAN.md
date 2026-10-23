@@ -82,7 +82,8 @@ found INSERT's distortions and the chord keys already in DIRGE.)
 3. **8-level undo and TAKE** (`ui.c`, `take.c`): CPU-check the ISR note log against `tests/target_budget.txt`. **Done**:
    an 8-copy undo ring in the pool (SAVE held as before, then OCT- / OCT+ for 3 s); TAKE on REC held + C4
    (`firmware/src/dirge/take.c`, `take_commit.c`; Skiff's SHIFT is HOME held, DIRGE's MENU).
-4. **Voice budget 12 on two cores** (Skiff 1.3's VOICE_BUDGET), before any track-count change.
+4. **Voice budget 12 on two cores** (Skiff 1.3's VOICE_BUDGET), before any track-count change. **Done** (`core.h`
+   VOICE_BUDGET; untested on hardware: CPU-check DRONE SUPER + VAULT + TAPE with 12 voices on the unit).
 5. **Design note, then build**: six tracks + the RAM / POOL split + a new project format. CPU-test DRONE + VAULT +
    TAPE with six tracks running.
 6. **Design note, then build**: the pattern pool, per-track lists and scenes, with a DIRGE flash layout.
@@ -103,7 +104,7 @@ work
 | Area | DIRGE today | Skiff | GR!MM | Action |
 | --- | --- | --- | --- | --- |
 | Home screen | Felucca home | HOME landing page, all 6 tracks | direct access to parameters, doubles as mixer | **Design** (step 8) |
-| Tracks / voices | 4 tracks, 8 shared voices | 6 tracks (T5 / T6 light), 8 voices, 12 on two cores | 4 tracks, 6 voices | **Port** the 12-voice budget (4); six tracks after a design note (5) |
+| Tracks / voices | 4 tracks, 8 shared voices, 12 on two cores (done) | 6 tracks (T5 / T6 light), 8 voices, 12 on two cores | 4 tracks, 6 voices | **Port** the 12-voice budget (4); six tracks after a design note (5) |
 | Tape FX | TAPE, ROOM, WEAR | — | TAPE | **Have** |
 | Long reverb | VAULT ~32 s + INF | ROOM, SPRING, stereo HALL | SPACE ~32 s + INF | **Have** |
 | Delay | Felucca delay + WEAR | delay send | tape echo | **Have** |
