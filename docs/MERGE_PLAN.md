@@ -84,9 +84,11 @@ found INSERT's distortions and the chord keys already in DIRGE.)
    (`firmware/src/dirge/take.c`, `take_commit.c`; Skiff's SHIFT is HOME held, DIRGE's MENU).
 4. **Voice budget 12 on two cores** (Skiff 1.3's VOICE_BUDGET), before any track-count change. **Done** (`core.h`
    VOICE_BUDGET; untested on hardware: CPU-check DRONE SUPER + VAULT + TAPE with 12 voices on the unit).
-5. **Design note, then build**: six tracks + the RAM / POOL split + a new project format. CPU-test DRONE + VAULT +
+5. **Design note, then build**: six tracks + the RAM / POOL split + a new project format (design note below: does
+   not fit without cuts; waiting on a decision). CPU-test DRONE + VAULT +
    TAPE with six tracks running.
-6. **Design note, then build**: the pattern pool, per-track lists and scenes, with a DIRGE flash layout.
+6. **Design note, then build**: the pattern pool, per-track lists and scenes, with a DIRGE flash layout (design note
+   below: needs 80 KB of flash, one user sample slot; waiting on a decision).
 7. GR!MM-inspired UI: HOME with direct access to parameters (Skiff's HOME as the landing page), GRAIN as a send with
    FREEZE, a quicker gesture for the existing chord keys, a per-track note latch (beyond ARP HOLD).
 8. DRUM-X as engine 15 (optional).
@@ -95,6 +97,49 @@ found INSERT's distortions and the chord keys already in DIRGE.)
 
 Each step: `tests/run_tests.sh` green (goldens unchanged unless the sound was meant to change), and a J_DIRGE render
 where it makes sound.
+
+## Design note: steps 5 and 6 (six tracks, the pattern pool)
+
+Measured on `main` after step 4 (`./build.sh`, the target build):
+
+| | Used | Free |
+| --- | --- | --- |
+| RAM (.data + .bss) | 61.5 of 72 KiB | ~12.2 KB |
+| Pool (the same SRAM) | 346.8 of 360 KiB | ~21.8 KB |
+| App image | 523.6 of 568 KB | ~44 KB |
+| Flash store | projects 0x97000 (4 x A/B), user samples 0xA0000 (3 x 80 KB), user presets 0xDC000, OTA 0xE0000, autosave 0xE5000, FM6 bank 0xE7000 | no free 80 KB run |
+
+**Six tracks: what two more tracks cost.**
+
+| Item | Per track | Two more | Where |
+| --- | --- | --- | --- |
+| `track_t` (voices, steps, state) | 1840 B | 3.7 KB | RAM |
+| The song chain's four slots (`song_chain.c` `chain.source`: steps of every track) | 3 KB | 6.1 KB | RAM |
+| Engine state region (`engines.c` `eng_mem`, sized by PHYS) | 12.9 KB | 25.8 KB | pool |
+| SLICER STUT buffer (`slicer.c` `sl_buf`; PERFORM's buffer is the same memory) | 8 KB | 16 KB | pool |
+| Motion bases, FM6 patches, MIDI, chords, the rest | ~0.5 KB | ~1 KB | RAM |
+
+That is ~11 KB of the 12.2 KB of RAM and ~42 KB of pool against 21.8 KB free. Skiff fits it with "light" T5 / T6 (no
+PHYS or GRAIN there: a smaller engine region) and by moving the RAM / POOL split; DIRGE's TAPE, ROOM and VAULT already
+sit in that pool. Even trimmed (light engines, no STUT on T5 / T6) it takes nearly all of the free memory, which the
+roadmap's own DSP (delay lines, an FDN reverb, chaos oscillators) needs. Two more tracks on one core also cost CPU:
+DRONE SUPER, VAULT and TAPE on six tracks wants the second core.
+
+**The project format.** FUN10 is one 3840-byte storage object (`storage.c` ST_PAYLOAD_MAX), full for track parameters
+since DUCK. Six tracks of steps alone (6 x 691 B) are 4146 B: six tracks need a new format either way, two objects
+per project or the steps moved out of the project.
+
+**The pattern pool (step 6)** is that move: Skiff keeps 64 patterns in their own flash (BK_REC 888 B each, 20 sectors,
+80 KB with its crash-safe commits), and a project keeps each track's list A..P of pattern ids, so a project shrinks and
+the track count stops driving its size. In DIRGE it needs 80 KB of flash with no free run of that size: the obvious
+source is one of the three user sample slots (80 KB each, 0xC8000..0xDC000). It would also let the song chain's 14 KB
+of RAM go (patterns read from flash instead of four slots held in RAM).
+
+**Decisions needed before building:**
+1. Six tracks at all, given the memory above (recommendation: not now; revisit after DIRGE's own DSP has taken its
+   share, and with light T5 / T6 if so).
+2. The pattern pool: worth a sample slot (3 to 2)? And a new project format: old FUN10 projects import (their four
+   slots become pool patterns, the chain becomes lists), which is the plan's proposal.
 
 ## Feature matrix (checked)
 
