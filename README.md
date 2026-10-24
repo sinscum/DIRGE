@@ -48,6 +48,7 @@ Free and open source (GPL-3.0-only). Unofficial firmware, not made or endorsed b
   - **TAPE:** the whole mix through a worn cassette (wow, flutter, saturation, a high cut, hiss that follows the music)
   - **ROOM:** a dead channel's room tone under the mix (static, 50 Hz hum, crackle), into the reverb too
   - **WEAR:** the delay worn into a tape echo (wow and flutter on its read, darker, saturated repeats)
+- **LATCH** (after GR!MM's): GLO + G4 latches a track's keys, so a drone keeps sounding after you let go.
 - **TAKE** (from Skiff): play with REC off, then hold REC + C4 to keep the last loop you played (notes, holds, knob
   moves) in the pattern. **8 levels of undo**: hold SAVE, then OCT− / OCT+ to step further back or forward.
 - **FX > DUCK** (ported from [Skiff](https://github.com/illuminus5/skiff)): a track ducks under another track's notes
@@ -58,7 +59,8 @@ Free and open source (GPL-3.0-only). Unofficial firmware, not made or endorsed b
   split point.
 - **Power-on scenes** (MENU > SYSTEM > SCENE): **DIRGE** (DRONE, a fat bass with a pattern, wind noise and a deep kit
   at 90 BPM), **FELUCCA** or **BLANK**.
-- **The look:** three palettes, **BLOOD** (the default), **CRYPT** and **NEON**, and a splash framed like a coffin lid.
+- **The look:** four palettes, **BLOOD** (the default), **CRYPT**, **NEON** and **PLAGUE** (the plague doctor's
+  leather, parchment and brass), and a splash framed like a coffin lid.
   Felucca's palettes are all still there.
 
 Every DIRGE addition is off, or bit for bit Felucca, until you turn it on: Felucca's projects and sounds open and play

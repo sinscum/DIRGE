@@ -654,6 +654,13 @@ static void layer_key(uint32_t l, uint32_t k)
             ml_toggle();                                /* D4: MIDI LEARN on / off (midi_learn.c) */
         } else if (p == 6u) {
             lys.fill |= 1u << k;                        /* E4: FILL while held (layer_keys) */
+        } else if (p == 8u) {                           /* DIRGE: G4, LATCH the selected track's keys on / off */
+            char b[8] = "T1 OFF";                       /* "LATCH T2 ON" */
+            song.latch ^= (uint8_t)(1u << song.sel);
+            b[1] = (char)('1' + song.sel);
+            if ((song.latch >> song.sel) & 1u)
+                str_cpy(b + 3, "ON", sizeof b - 3);
+            ui_say("LATCH ", b);
         }
     } else if (l == LAYER_SCL) {
         TSEL->p[P_ROOT] = (int16_t)((k + 5u) % 12u);    /* the key's note name (F3 = F) */
@@ -853,7 +860,8 @@ static uint32_t layer_leds(uint32_t *br)
         } else if (l == LAYER_GLO) {                    /* sounding lit; SOLO held lit, the others, C4, F4 breathe */
             on = b ? p < NTRK && glo_sounding(p) : (p < NTRK && ((lys.solo >> k) & 1u)) || (p == 5u && ui.ml.on) ||
                  (p == 6u && seq_fill);
-            can = !b && (p < NTRK || p == 4u || p == 5u || p == 6u || (p == 7u && !song.g[G_CLOCK]));
+            on |= !b && p == 8u && ((song.latch >> song.sel) & 1u);   /* (DIRGE: G4 LATCH, the selected track's) */
+            can = !b && (p < NTRK || p == 4u || p == 5u || p == 6u || (p == 7u && !song.g[G_CLOCK]) || p == 8u);
         } else if (l == LAYER_SCL) {                    /* the root lit, the scale's notes breathe */
             e = (k + 5u + 12u - root) % 12u;
             on = e == 0u;
@@ -894,6 +902,7 @@ static const char B_NOTE[NTRK] = {'F', 'G', 'A', 'C'};  /* black keys 1..4: F# G
 #define LC_H 42                                          /* the big cells: rows at y 4 and 50 */
 #define LF_H 19                                          /* FX: the white keys' rows (F3 .. B3, C4 .. F4, G4 .. C5, D5 .. G5) */
 #define LM_Y 96                                          /* the black keys' row (22 px) */
+#define LG_H 19                                          /* DIRGE: GLO's C4 .. F4 and G4 LATCH rows, at y 50 and 73 */
 #define LM_H 22
 enum { LS_OFF, LS_SEL, LS_HELD, LS_WAIT, LS_DIM, LS_MUTE };
 /* 1.5 (#173): | LS_ALT, an idle (OFF, DIM) cell of the FX map's 2nd and 4th columns in a fill of its own, the columns
@@ -1012,14 +1021,30 @@ static void layer_glo(void)
         n[0] = W_NOTE[e];
         lcell(LC_X(e), 4, LC_H, n, trk_icon(e, 0), 0, "SOLO", (perf_solo >> e) & 1u ? LS_HELD : LS_OFF, 1);
     }
-    n[0] = 'C';
-    lcell(LC_X(0), 50, LC_H, n, ICON_MUTE, 0, "ALL", LS_OFF, 0);   /* (unmute all) */
+    n[0] = 'C';                                         /* (DIRGE: C4 .. F4 a key row, G4 LATCH under it) */
+    lcell(LC_X(0), 50, LG_H, n, ICON_MUTE, 0, "ALL", LS_OFF, 0);   /* (unmute all) */
     n[0] = 'D';
-    lcell(LC_X(1), 50, LC_H, n, ICON_MIDI, 0, "LEARN", ui.ml.on ? LS_SEL : LS_OFF, 0);   /* (MIDI LEARN, 1.5) */
+    lcell(LC_X(1), 50, LG_H, n, ICON_MIDI, 0, "MIDI", ui.ml.on ? LS_SEL : LS_OFF, 0);   /* (MIDI LEARN, 1.5; DIRGE: "MIDI" in the shorter row) */
     n[0] = 'E';
-    lcell(LC_X(2), 50, LC_H, n, ICON_STEPS, 0, "FILL", seq_fill ? LS_HELD : LS_OFF, 1);   /* (FILL while held, 1.5.5) */
+    lcell(LC_X(2), 50, LG_H, n, ICON_STEPS, 0, "FILL", seq_fill ? LS_HELD : LS_OFF, 1);   /* (FILL while held, 1.5.5) */
     n[0] = 'F';
-    lcell(LC_X(3), 50, LC_H, n, ICON_TEMPO, 0, "TAP", song.g[G_CLOCK] ? LS_DIM : LS_OFF, 0);
+    lcell(LC_X(3), 50, LG_H, n, ICON_TEMPO, 0, "TAP", song.g[G_CLOCK] ? LS_DIM : LS_OFF, 0);
+    {                                                   /* G4 LATCH: two columns wide, the selected track's state beside */
+        int32_t y = 50 + LG_H + 4, w = 2 * LC_W + 4, x2 = LC_X(2);
+        uint32_t on = (song.latch >> song.sel) & 1u;
+        char b[8] = "T1 OFF";
+        uint16_t ink, fill = lc_box(LC_X(0), y, w, LG_H, lc_fill(on ? LS_SEL : LS_OFF, &ink));
+        GFX_HOOK_ALIGN(0, y, 0, y + LG_H, AL_V, "glo latch cell on its middle");
+        cv_text_on(LC_X(0) + 5, y + CAP_IN(S, LG_H), &AF_S, "G", fill == T_RAISE || fill == T_SURF ? T_MID : ink, fill);
+        GFX_HOOK_ALIGN(0, y, 0, y + LG_H, AL_V, "glo latch cell on its middle");
+        cv_text_r(LC_X(0) + w - 5, y + CAP_IN(S, LG_H), &AF_S, "LATCH", ink, fill);
+        b[1] = (char)('1' + song.sel);
+        if (on)
+            str_cpy(b + 3, "ON", sizeof b - 3);
+        fill = lc_box(x2, y, w, LG_H, lc_fill(LS_OFF, &ink));
+        GFX_HOOK_ALIGN(x2, y, x2 + w, y + LG_H, AL_HV, "glo latch state centred");
+        cv_text_in(x2, y + CAP_IN(S, LG_H), w, &AF_S, b, ink, fill);
+    }
     for (e = 0; e < NTRK; e++) {                        /* the black keys 1..4: MUTE, latched */
         bnote(n, e);
         lcell(LC_X(e), LM_Y, LM_H, n, ICON_MUTE, trk_icon(e, 0), 0, trk[e].p[P_MUTE] ? LS_MUTE : LS_OFF, 0);
@@ -1265,6 +1290,7 @@ static void draw_layer(void)
     }
     else if (l == LAYER_GLO)
         sig += perf_solo * 31u + (uint32_t)song.g[G_CLOCK] * 5u + ui.ml.on * 7u + seq_fill * 1009u +
+               (song.latch >> song.sel & 1u) * 65537u +   /* (DIRGE: G4 LATCH) */
                (uint32_t)(trk[0].p[P_MUTE] | trk[1].p[P_MUTE] << 1 | trk[2].p[P_MUTE] << 2 | trk[3].p[P_MUTE] << 3) * 131u;
     else if (l == LAYER_SCL)
         sig += (uint32_t)TSEL->p[P_SCALE] * 31u;

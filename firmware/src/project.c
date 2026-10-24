@@ -132,6 +132,7 @@ typedef struct {
     uint8_t fm6[NTRK][FM6_PACKED];             /* each track's FM6 patch, packed (eng_fm6.c) */
     uint8_t mch[NTRK];                         /* 1.5.5: MIDI IN TRACK's channels, as song.mch (PROJ_MIDI_OFF) */
     uint8_t keys, ksplit;                      /* DIRGE: KEYS and SPLIT, as song.keys / song.ksplit (PROJ_KEYS_OFF) */
+    uint8_t latch;                             /* DIRGE: LATCH, as song.latch (PROJ_LATCH_OFF) */
     char name[PROJ_NAME_LEN];                  /* the project's name: upper-case ASCII 32..126, 0-padded; "" = none */
     uint32_t sum;
 } project_t;
@@ -170,9 +171,12 @@ _Static_assert(sizeof(project_v5_t) == 3352u && sizeof(project_v6_t) == 3388u, "
  * there as that block. Every project before has them 0: channels 1..4, MIDI IN as its G_ROUTE says */
 #define PROJ_MIDI_OFF (PROJ_FM6_OFF - 3u)
 /* DIRGE: MENU > AUDIO > KEYS and SPLIT, the 2 of FUN10's spare bytes before MIDI IN TRACK's (11 left then; DUCK's DEPTH
- * and REL took 8, 3 are left: no more track parameters in FUN10): KEYS (0..8; more read as OFF), SPLIT as song.ksplit (0: C4; 27 and more read as C4). Every
+ * and REL took 8, LATCH 1, 2 are left: no more track parameters in FUN10): KEYS (0..8; more read as OFF), SPLIT as song.ksplit (0: C4; 27 and more read as C4). Every
  * project before has them 0: KEYS OFF, SPLIT C4. A firmware without them never reads them: it plays the selected track */
 #define PROJ_KEYS_OFF (PROJ_MIDI_OFF - 2u)
+/* DIRGE: GLO + G4's LATCH, a bit per track (song.latch), the spare byte before KEYS (2 left). 0 in every project before:
+ * no track latched. A firmware without it never reads it */
+#define PROJ_LATCH_OFF (PROJ_KEYS_OFF - 1u)
 typedef union { uint32_t align; uint8_t raw[PROJ_STORE_SIZE]; } project_store_t;
 _Static_assert(G_COUNT == 27u, "FUN7 globals retain original IDs");
 _Static_assert(sizeof(project_store_t) == 3840u && PROJ_STORE_V7 == sizeof(project_v6_t), "FUN10 / FUN7 sizes");
@@ -658,12 +662,14 @@ static int proj_pack(project_store_t *out, const project_t *q)
             b[pos++] = (uint8_t)(s->probability | (r >> 1) << 7);
         }
     }
-    if (pos + sizeof q->chain + sizeof q->motion > PROJ_KEYS_OFF) return 0;   /* (DIRGE: KEYS before MIDI IN TRACK) */
+    if (pos + sizeof q->chain + sizeof q->motion > PROJ_LATCH_OFF) return 0;   /* (DIRGE: LATCH, KEYS before MIDI IN
+                                                                                  * TRACK) */
     memcpy(b + pos, &q->chain, sizeof q->chain); pos += sizeof q->chain;
     memcpy(b + pos, &q->motion, sizeof q->motion);
     proj_midi_pack(b, q);
     b[PROJ_KEYS_OFF] = q->keys < KEYS_N ? q->keys : 0u;   /* (DIRGE) */
     b[PROJ_KEYS_OFF + 1u] = q->ksplit < 27u ? q->ksplit : 0u;
+    b[PROJ_LATCH_OFF] = q->latch & ((1u << NTRK) - 1u);   /* (DIRGE) */
     memcpy(b + PROJ_FM6_OFF, q->fm6, sizeof q->fm6);
     {   /* the name (0-padded; stops at the first 0) */
         char n[PROJ_NAME_LEN + 1u];
@@ -773,11 +779,12 @@ static int proj_unpack(project_t *q, const uint8_t *b, uint32_t st)
     else if (!proj_motion_v9(&q->motion, b + pos))
         return 0;
     if (!proj_motion_ids(&q->motion, np) || !chain_valid(&q->chain) || !motion_valid(&q->motion)) return 0;
-    q->keys = q->ksplit = 0;                            /* DIRGE: KEYS OFF, SPLIT C4 (0 in every FUN10 before) */
+    q->keys = q->ksplit = q->latch = 0;                 /* DIRGE: KEYS OFF, SPLIT C4, no LATCH (0 in every FUN10 before) */
     if (v10) {
         proj_midi_unpack(q, b);                         /* (1.5.5: 0 in every FUN10 before, FUN9..FUN7 have none) */
         q->keys = b[PROJ_KEYS_OFF] < KEYS_N ? b[PROJ_KEYS_OFF] : 0u;
         q->ksplit = b[PROJ_KEYS_OFF + 1u] < 27u ? b[PROJ_KEYS_OFF + 1u] : 0u;
+        q->latch = b[PROJ_LATCH_OFF] & ((1u << NTRK) - 1u);
     }
     for (t = 0; t < NTRK; t++) {
         if (v7)
@@ -906,6 +913,7 @@ static void project_capture(project_t *p)
     memcpy(p->mch, song.mch, sizeof p->mch);
     p->keys = song.keys;                               /* (DIRGE) */
     p->ksplit = song.ksplit;
+    p->latch = song.latch;
     motion_unguard(f);
     memcpy(p->name, proj_name, str_len(proj_name));
     p->sum = proj_sum(p);
@@ -1108,6 +1116,7 @@ static int project_restore_runtime(const project_t *input)
         song.mch[k] = (uint8_t)(p->mch[k] < MCH_N ? p->mch[k] : 0u);
     song.keys = p->keys < KEYS_N ? p->keys : 0u;       /* (DIRGE: KEYS, SPLIT) */
     song.ksplit = p->ksplit < 27u ? p->ksplit : 0u;
+    song.latch = p->latch & ((1u << NTRK) - 1u);        /* (DIRGE: LATCH) */
     midi_route = MIDI_ROUTE_AGAIN;                      /* (events_block: what the channels no longer hear let go) */
     for (k = 0; k < NTRK; k++) {
         track_t *t = &trk[k];
@@ -1361,6 +1370,7 @@ static uint32_t autosave_sig(void)
     h = as_mix(h, song.mch, sizeof song.mch);           /* (1.5.5: MIDI IN TRACK's channels, the project's) */
     h = as_mix(h, &song.keys, 1);                       /* (DIRGE: KEYS, SPLIT) */
     h = as_mix(h, &song.ksplit, 1);
+    h = as_mix(h, &song.latch, 1);
     h = as_mix(h, &motion, sizeof motion);
     h = as_mix(h, &chain_config, sizeof chain_config);
     return as_mix(h, proj_name, sizeof proj_name);

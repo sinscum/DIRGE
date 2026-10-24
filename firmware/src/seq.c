@@ -790,6 +790,33 @@ static uint32_t keys_track(uint32_t s)
     return m && m <= KEYS_LAYER_N && t != song.sel ? t + 1u : 0u;
 }
 
+/* DIRGE: LATCH (song.latch, GLO + G4: a bit per track). A key slot's notes latched on (bit s of kb_latched: slot s,
+ * KEYS LAYER's second track s + 27; kb_ltrk[s] its track): its release did nothing, the next press of that key ends
+ * them instead of playing. A track unlatched: its latched notes end at the next block. ISR-owned */
+static uint64_t kb_latched;
+static uint8_t kb_ltrk[54];
+static void latch_end(uint32_t s)                /* slot s's latched notes end */
+{
+    if (!((kb_latched >> s) & 1u))
+        return;
+    kb_latched &= ~((uint64_t)1u << s);
+    key_off(s, &trk[kb_ltrk[s] % NTRK]);
+}
+static void latch_mark(uint32_t s, uint32_t t)   /* slot s plays on track t: latched there, its release does nothing */
+{
+    if ((song.latch >> t) & 1u) {
+        kb_latched |= (uint64_t)1u << s;
+        kb_ltrk[s] = (uint8_t)t;
+    }
+}
+static void latch_sync(void)                     /* the slots whose track is latched no more */
+{
+    uint32_t s;
+    for (s = 0; s < 54u; s++)
+        if (((kb_latched >> s) & 1u) && !((song.latch >> kb_ltrk[s]) & 1u))
+            latch_end(s);
+}
+
 static void keyboard_block(void)
 {
     uint32_t cur = fm1_in.notes, ch, k;
@@ -797,6 +824,8 @@ static void keyboard_block(void)
     ch = cur ^ kb_prev;                          /* keys also sound while entering steps */
     if (perf_remap)
         perf_key_remap();
+    if (kb_latched)
+        latch_sync();                            /* (DIRGE: LATCH turned off on a track) */
     if (!ch)
         return;
     if (kb_boot_hold) {                           /* #137: under the splash; their release is silent too */
@@ -828,6 +857,12 @@ static void keyboard_block(void)
                     perf_key_press(k, 1);
                 continue;
             }
+            if (!mute && song.grid != 1u && ((kb_latched >> k | kb_latched >> (k + 27u)) & 1u)) {
+                latch_end(k);                     /* DIRGE: LATCH, the key's latched notes: this press ends them */
+                latch_end(k + 27u);
+                kb_note[k] = KB_SILENT;
+                continue;
+            }
             if ((mute >> k) & 1u)                 /* NAME (ui_name.c): every key types, none sounds; SONG: A..D */
                 kb_note[k] = KB_SILENT;
             else if (song.grid == 1u)             /* the DRUM grid: a lane key plays its lane, the rest are the UI's */
@@ -837,11 +872,15 @@ static void keyboard_block(void)
             if (!song.grid && keys_track(k + 27u)) {   /* DIRGE: KEYS LAYER, the second track (its own mapping) */
                 kb_trk[k + 27u] = (uint8_t)(keys_track(k + 27u) - 1u);
                 kb_note[k + 27u] = (uint8_t)kb_map(&trk[kb_trk[k + 27u]], k);
-                if (kb_note[k + 27u] != KB_SILENT)
+                if (kb_note[k + 27u] != KB_SILENT) {
+                    latch_mark(k + 27u, kb_trk[k + 27u]);   /* (DIRGE: LATCH) */
                     key_on(k + 27u, &trk[kb_trk[k + 27u]]);
+                }
             }
             if (kb_note[k] == KB_SILENT)
                 continue;
+            if (!song.grid)
+                latch_mark(k, kb_trk[k]);         /* DIRGE: a latched track: the release does nothing */
             key_on(k, &trk[kb_trk[k]]);
 #ifdef FM1_INPUT_LAT
             kb_lat(k);
@@ -852,9 +891,9 @@ static void keyboard_block(void)
                 perf_key_press(k, 0);
                 continue;
             }
-            if (kb_note[k + 27u] != KB_SILENT)    /* (DIRGE: KEYS LAYER's second track) */
-                key_off(k + 27u, &trk[kb_trk[k + 27u] % NTRK]);
-            if (kb_note[k] == KB_SILENT)
+            if (kb_note[k + 27u] != KB_SILENT && !((kb_latched >> (k + 27u)) & 1u))   /* (DIRGE: KEYS LAYER's 2nd */
+                key_off(k + 27u, &trk[kb_trk[k + 27u] % NTRK]);                     /* track; LATCH: it sounds on) */
+            if (kb_note[k] == KB_SILENT || ((kb_latched >> k) & 1u))
                 continue;
             key_off(k, &trk[kb_trk[k] % NTRK]);
         }

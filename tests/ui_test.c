@@ -1596,12 +1596,13 @@ static int test_display_preferences(void)
                  memcmp(before, host_screen, sizeof before) && !memcmp(sounds, trk, sizeof sounds));
     turn(EN_K1, 1);
     bad += check("COLOR KNOB 1 steps on to HI-CON, NIGHT (#50: true black), MONO (1.0.2: black and white), DIRGE's BLOOD "
-                 "CRYPT NEON, then wraps to GREY",
+                 "CRYPT NEON PLAGUE, then wraps to GREY",
                  settings.palette == 7 && (turn(EN_K1, 1), settings.palette == 8u) && T_BG == 0u &&
                  str_eq(UI_PALETTES[8].name, "NIGHT") && (turn(EN_K1, 1), settings.palette == UI_BW_INDEX) &&
                  str_eq(UI_PALETTES[UI_BW_INDEX].name, "MONO") && T_BG == 0u && T_TEXT == 0xFFFFu &&
                  (turn(EN_K1, 1), settings.palette == UI_DIRGE_INDEX) && str_eq(UI_PALETTES[UI_DIRGE_INDEX].name, "BLOOD") &&
                  (turn(EN_K1, 1), turn(EN_K1, 1), str_eq(UI_PALETTES[settings.palette].name, "NEON")) &&
+                 (turn(EN_K1, 1), str_eq(UI_PALETTES[settings.palette].name, "PLAGUE")) &&   /* (DIRGE's fourth) */
                  (turn(EN_K1, 1), settings.palette == UI_GREY_INDEX) && str_eq(UI_PALETTES[UI_GREY_INDEX].name, "GREY"));
     settings.lowcut = 2;
     ui.menu_sel = MI_LOWCUT;
@@ -3956,7 +3957,8 @@ static int test_quick_layers(void)
     a = leds_at(0); b2 = leds_at(250);
     ok &= ((a & b2) >> black(0)) & 1u && !(((a | b2) >> black(1)) & 1u);           /* T1 sounding lit, T2 muted dark */
     ok &= ((a ^ b2) >> white(0)) & 1u && ((a ^ b2) >> white(7)) & 1u && ((a ^ b2) >> white(5)) & 1u &&   /* (D4: LEARN) */
-          ((a ^ b2) >> white(6)) & 1u && !(((a | b2) >> white(8)) & 1u);   /* (E4: FILL, 1.5.5; G4 none) */
+          ((a ^ b2) >> white(6)) & 1u && ((a ^ b2) >> white(8)) & 1u &&   /* (E4: FILL, 1.5.5; DIRGE: G4 LATCH */
+          !(((a | b2) >> white(9)) & 1u);                                  /* breathes; A4 none) */
     key_up(black(1)); btn_up(B_GLO); frame();
     bad += check("GLO + black key 2: T2 MUTE latched (SET), silent, no MIDI; LEDs: sounding lit, muted dark", ok &&
                  trk[1].p[P_MUTE] == 1 && !ui.layer);
@@ -9770,6 +9772,47 @@ static int test_duck_page(void)
     return bad;
 }
 
+/* DIRGE: LATCH (GLO + G4, song.latch; seq.c latch_mark / latch_end): on the selected track a press starts the key's note
+ * and its release does nothing; the next press of that key ends it (and plays nothing); other keys latch alongside;
+ * LATCH off ends what is latched; the project keeps it (PROJ_LATCH_OFF) */
+static int test_latch(void)
+{
+    int bad = 0, ok;
+    track_t *t;
+    project_t a, b;
+    static project_store_t st;
+    ui_power_on();
+    go_home();
+    song.sel = 0; frame();
+    t = &trk[0];
+    host_preset(t, 0u, 1u);                             /* (ANALOG's second preset) */
+    t->p[P_VOICE] = V_POLY;
+    t->p[P_AMODE] = 0;
+    btn_down(B_GLO); frame();
+    tap_k(white(8));                                    /* G4: LATCH T1 */
+    btn_up(B_GLO); frame(); frame();
+    ok = song.latch == 1u && str_eq(ui.msg, "LATCH T1 ON");
+    key_down(white(4)); blocks(2); key_up(white(4)); blocks(4);
+    ok &= gated(t, 200u) == 1u;                         /* (C4: on after its release) */
+    key_down(white(6)); blocks(2); key_up(white(6)); blocks(4);
+    ok &= gated(t, 200u) == 2u;                         /* (E4 beside it) */
+    key_down(white(4)); blocks(2); key_up(white(4)); blocks(4);
+    ok &= gated(t, 200u) == 1u;                         /* (C4 again: it ends, nothing new) */
+    bad += check("LATCH: GLO + G4 latches T1; a key's note stays after its release, its next press ends it", ok);
+    project_capture(&a);
+    ok = a.latch == 1u && proj_pack(&st, &a) && proj_import(&b, &st, sizeof st) && b.latch == 1u;
+    bad += check("  LATCH kept with the project (FUN10's spare byte)", ok);
+    btn_down(B_GLO); frame();
+    tap_k(white(8));                                    /* G4: LATCH T1 off */
+    btn_up(B_GLO); frame(); frame();
+    blocks(4);
+    ok = !song.latch && str_eq(ui.msg, "LATCH T1 OFF") && gated(t, 200u) == 0u;
+    key_down(white(4)); blocks(2); key_up(white(4)); blocks(4);
+    ok &= gated(t, 200u) == 0u;
+    bad += check("  LATCH off: the latched note ends; keys play as ever again", ok);
+    return bad;
+}
+
 /* DIRGE: the undo ring (ui.c undo_ring, undo_step; after Skiff's): sound loads on T1, T2, T1 are three copies. SAVE held
  * undoes the newest, OCT- in the window after it goes further back, OCT+ forward; past the window OCT- is the octave
  * again; a new load ends the redo; the ninth copy drops the oldest */
@@ -10111,6 +10154,7 @@ int main(void)
     bad += test_no_flash();
     bad += test_duck_page();                         /* DIRGE: FX > DUCK */
     bad += test_undo_ring();                         /* DIRGE: the undo ring */
+    bad += test_latch();                             /* DIRGE: LATCH */
 #if FELUCCA_FM4
     bad += test_fm_charts();                        /* (DIGITAL's charts: built with FELUCCA_FM4=1 only) */
 #else

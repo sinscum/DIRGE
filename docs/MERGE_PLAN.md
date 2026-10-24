@@ -85,14 +85,17 @@ found INSERT's distortions and the chord keys already in DIRGE.)
 4. **Voice budget 12 on two cores** (Skiff 1.3's VOICE_BUDGET), before any track-count change. **Done** (`core.h`
    VOICE_BUDGET; untested on hardware: CPU-check DRONE SUPER + VAULT + TAPE with 12 voices on the unit).
 5. **Design note, then build**: six tracks + the RAM / POOL split + a new project format (design note below: does
-   not fit without cuts; waiting on a decision). CPU-test DRONE + VAULT +
+   not fit without cuts; decided: not now). CPU-test DRONE + VAULT +
    TAPE with six tracks running.
 6. **Design note, then build**: the pattern pool, per-track lists and scenes, with a DIRGE flash layout (design note
-   below: needs 80 KB of flash, one user sample slot; waiting on a decision).
+   below: needs 80 KB of flash, one user sample slot; decided: not now).
 7. GR!MM-inspired UI: HOME with direct access to parameters (Skiff's HOME as the landing page), GRAIN as a send with
-   FREEZE, a quicker gesture for the existing chord keys, a per-track note latch (beyond ARP HOLD).
+   FREEZE, a quicker gesture for the existing chord keys, a per-track note latch (beyond ARP HOLD). **Partly done:**
+   the note latch (GLO + G4, `song.latch`, a FUN10 tail byte: 2 left). The chord gesture already exists (SCL held:
+   KNOB 3 CHORD, KNOB 4 VOICING). HOME's filter / FX macro and a GRAIN send need new per-track and global parameters
+   (FUN10 and G_COUNT are full): they wait for the next format step, as do steps 5 and 6.
 8. DRUM-X as engine 15 (optional).
-9. Plague-doctor theme.
+9. Plague-doctor theme. **Done:** the PLAGUE palette (MENU > DISPLAY > COLOR).
 10. Skiff's DRIVE kinds on DIST, only if INSERT's distortions are not enough in practice.
 
 Each step: `tests/run_tests.sh` green (goldens unchanged unless the sound was meant to change), and a J_DIRGE render
@@ -163,7 +166,7 @@ work
 | Mixer (GLO) | GLO layer (mute / solo), MIXER page | fuller GLO: FILL, tap tempo | song mode | compare on the unit, then port what is missing |
 | Arp | 14 modes, CHANCE, SWING, HOLD | the same | arp + latch | **Have** |
 | Chords | SCL > CHORD one-key chords (9 + OFF, 5 voicings) + KEYS LAYER / SPLIT | 9 chords, 5 voicings | one-key chords (hold SEL) | **Have**; GR!MM's gesture (7) |
-| Drone latch | ARP HOLD | ARP HOLD | latch | **Have** for the arp; a note latch (7) |
+| Drone latch | ARP HOLD; GLO + G4 LATCH | ARP HOLD | latch | **Done** (7) |
 | Sequencer pages | STEP, DETAIL, AUTOMATION, SONG | + ROLL, CHANCE, PLAY, PATTERN | pattern screen | **Port** pages with the pool (6) |
 | Automation | SEQ > AUTOMATION | the same | — | **Have** |
 | Song mode | Felucca song chain | 64-pattern pool, lists A..P, scenes | slots A..D | **Port** after a design note (6) |
@@ -171,7 +174,7 @@ work
 | Undo / TAKE | 8-level undo, TAKE (from Skiff) | 8-level undo, TAKE | — | **Done** (3) |
 | Noise | NOISE engine + DIRGE noise DSP | NOISE engine | — | **Have** (the same Felucca-Engines NOISE) |
 | Drums | DRUM | DRUM + DRUM-X | — | optional **Port** as engine 15 (8) |
-| Themes | BLOOD CRYPT NEON | SKIFF HI-CON PAPER CRYPT NEON QUARK | pixel-brutalist | **Build** plague doctor (9) |
+| Themes | BLOOD CRYPT NEON PLAGUE | SKIFF HI-CON PAPER CRYPT NEON QUARK | pixel-brutalist | **Done** (9) |
 | Web editor / emulator | yes | yes | yes | **Have** |
 
 ## Open questions

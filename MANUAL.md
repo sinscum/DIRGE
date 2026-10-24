@@ -248,8 +248,13 @@ starting pattern. Each tool is one undo.
 
 Tap **GLO** for **SONG**, the song chain: KNOB 1 picks the section, the keys A–D pick patterns, PLAY plays the song.
 
-**Hold GLO** for the mixer keys ([13](#13-quick-layers)): mutes, solos, FILL, tap tempo and the four levels.
+**Hold GLO** for the mixer keys ([13](#13-quick-layers)): mutes, solos, FILL, tap tempo, LATCH and the four levels.
 GLO + PLAY restarts from the top without stopping.
+
+**LATCH** (DIRGE, after GR!MM's): hold GLO and press G4 to latch the selected track's keys. Then a key starts its
+note (or chord) and keeps it sounding after you let go; press the same key again to stop it. Press other keys to stack
+more notes: a drone you can play into and then leave running while you switch tracks. GLO + G4 again turns LATCH off
+and ends the latched notes. It is saved with the project. (The arpeggiator has its own latch: ARP 2 > HOLD.)
 
 ## 12. SAVE
 
@@ -273,7 +278,7 @@ notes and record nothing.
 | Hold | White keys from F3 | Black keys | KNOB 1–4 |
 |---|---|---|---|
 | **FX** | the performance effects (below) | T1–T4 mute while held | macros |
-| **GLO** | F3–B3 solo T1–T4 (while held), C4 unmute all, D4 MIDI LEARN, E4 FILL, F4 tap tempo | T1–T4 mute (latched) | T1–T4 level |
+| **GLO** | F3–B3 solo T1–T4 (while held), C4 unmute all, D4 MIDI LEARN, E4 FILL, F4 tap tempo, G4 LATCH | T1–T4 mute (latched) | T1–T4 level |
 | **SCL** | any key: the root | | ROOT, SCALE, CHORD, VOICING |
 | **EDIT** | one engine per key, then INIT (E5) and CLEAN INIT (F5) | the engine's quick actions (DRUM: lane mutes) | ENGINE, SOUND, FAV |
 | **SEQ** | the sequence tools | DRUM lanes | LENGTH, DIV, SWING, GATE |
@@ -297,7 +302,7 @@ Hold **HOME**. ALGORITHM picks the tab, PRESETS the row, any of KNOB 1–4 or OC
 
 | Tab | Rows |
 |---|---|
-| **DISPLAY** | COLOR (BLOOD, CRYPT, NEON and Felucca's palettes), STYLE (FLAT / LINE), LARGE, ANIM, LEDS, SCREEN OFF, SCOPE, HOME (SCOPE / TRACKS / LEVELS) |
+| **DISPLAY** | COLOR (BLOOD, CRYPT, NEON, PLAGUE and Felucca's palettes), STYLE (FLAT / LINE), LARGE, ANIM, LEDS, SCREEN OFF, SCOPE, HOME (SCOPE / TRACKS / LEVELS) |
 | **CONTROL** | HOLD (layer timing), KNOB ACCEL, FX LATCH, BPM LOCK, SCALE LEDS, STEP PREVIEW, CHORD ENTRY, SELECT (BPM / PAGE / MODW / VEL) |
 | **AUDIO** | SPEAKER EQ, USB LEVEL, CLICK, CLICK LEVEL, COUNT-IN, TUNE, **KEYS**, **SPLIT** |
 | **MIDI** | MIDI IN, T1–T4 CHANNEL, AUTO SELECT, SCREEN WAKE, LEARN CLEAR |
@@ -363,6 +368,7 @@ oscilloscope: play it with the mouse, a touch screen or the computer keyboard. I
 | Hold **GLO** + F3–B3 | Solo T1–T4 while held |
 | Hold **GLO** + D4 | MIDI LEARN |
 | Hold **GLO** + E4 / F4 | FILL / tap tempo |
+| Hold **GLO** + G4 | LATCH the selected track's keys on / off |
 | **GLO** + **PLAY** | Restart from the top |
 | Hold **SCL** + key | Set the root |
 | Hold **EDIT** + white key | Switch engine |

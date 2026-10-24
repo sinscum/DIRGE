@@ -55,6 +55,9 @@ PALETTES = [
     ("BLOOD",  (8, 0, 2),       (36, 6, 10),     (238, 224, 210), (255, 92, 76),   (140, 236, 255)),
     ("CRYPT",  (6, 4, 10),      (26, 18, 36),    (222, 216, 234), (186, 132, 255), (176, 255, 64)),
     ("NEON",   (4, 0, 8),       (30, 6, 36),     (246, 226, 250), (255, 76, 172),  (40, 232, 255)),
+    # PLAGUE (the plague doctor's): black leather, waxed-linen parchment text, tarnished brass values, a verdigris /
+    # herb-pouch green for the one active thing
+    ("PLAGUE", (10, 8, 5),      (36, 28, 18),    (234, 220, 190), (212, 166, 82),  (118, 218, 168)),
 ]
 BW = "MONO"
 BW_GREY = (82, 82, 82)             # MONO's one mid grey (RGB565 10/20/10): DIM LINE RAISE LANE

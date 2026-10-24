@@ -386,6 +386,9 @@ typedef struct {
                                   * one), SPLIT T1..T4 (the keys under SPLIT play that one, the rest the selected track);
                                   * SPLIT, the first key over it as its distance up from C4 (key 7), round the 27 (0: C4, as
                                   * the zeroed song: KSPLIT_KEY). The project's (project.c PROJ_KEYS_OFF); seq.c keys_track */
+    uint8_t latch;               /* DIRGE: GLO + G4, LATCH, bit k: track k's keys latch (a press starts a note, the next
+                                  * press of that key ends it; the release does nothing). The project's (project.c
+                                  * PROJ_LATCH_OFF); seq.c keyboard_block. Main loop writes */
 } song_t;
 #define KEYS_LAYER_N 4u              /* song.keys: 0 OFF, 1..4 LAYER T1..T4, 5..8 SPLIT T1..T4 */
 #define KEYS_N 9u
