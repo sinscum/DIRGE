@@ -10,7 +10,7 @@
 FM-1) · **[Read the manual](MANUAL.md)**
 
 DIRGE turns the FM-1 into a four-track instrument for drones, aggressive mono basses, noise and gritty sequences:
-fourteen engines, a 64-step sequencer per track with chords, ratchets, conditions and parameter locks, an arpeggiator,
+fifteen engines, a 64-step sequencer per track with chords, ratchets, conditions and parameter locks, an arpeggiator,
 a song chain, a performance layer, MIDI clock in for an Elektron rig, and long, worn, dark effects over all of it.
 
 It is built on [Felucca](https://github.com/hugelton/Felucca) 1.6.1 by Leo Kuroshita, Hügelton Instruments, and keeps
