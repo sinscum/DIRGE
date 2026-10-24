@@ -353,12 +353,35 @@ static int chk_wear(char *msg, uint32_t n)
 /* DIRGE's master effects: the "all" sends phrase (job_sends 4) of DRONE DIRGE with one of them on, so each has its
  * renders and health checks. arg: 0 TAPE (dirge/tape.c), 1 VAULT 32 s, 2 VAULT INF (fx.c), 3 ROOM (dirge/room.c: turned
  * down at the note-offs, as it plays on its own), 4 WEAR (fx.c fx_buses: FDBK 100, past unity) */
+/* DIRGE's BASS (eng_bass.c), arg 5 + its preset: a darksynth line of 1/16s at 110 BPM (an octave jump, accents on the
+ * beats: velocity opens its filter envelope), as its preset plays it (MONO), its own sends */
+static void bass_line(track_t *t)
+{
+    static const uint8_t L[16] = {33, 33, 45, 33, 33, 36, 33, 43, 33, 33, 45, 33, 31, 31, 43, 34};
+    uint32_t i, s16 = (uint32_t)(FS * 60u / 110u / 4u);
+    for (i = 0; i < 32u; i++) {
+        input_on(t, L[i % 16u], i % 4u ? 80u : 120u);
+        run_to(fpos + s16 * 6u / 10u / CTL * CTL);
+        input_off(t, L[i % 16u]);
+        run_to(at(0.0) + (i + 1u) * s16 / CTL * CTL);
+    }
+    rel_at = fpos;
+    dc_end = fpos + FS / 2u;
+    finish();
+}
+
 static void job_dirge(const job_t *j)
 {
     static const int16_t S[4] = {40, 80, 80, 80};
     track_t *t = &trk[0];
     uint32_t i;
     host_tracks_init();
+    if (j->arg >= 5u) {                        /* BASS: its preset arg - 5 */
+        host_preset(t, ENGI_BASS, j->arg - 5u);
+        t->p[P_AMODE] = 0;
+        bass_line(t);
+        return;
+    }
     host_preset(t, j->e, j->pi);
     t->p[P_AMODE] = 0;
     for (i = 0; i < 4u; i++)
@@ -1252,6 +1275,14 @@ int main(int argc, char **argv)
             j->e = ENGI_DRONE;
             j->pi = 0;
             j->arg = (uint8_t)k0;
+        }
+        for (k0 = 0; k0 < ENGINES[ENGI_BASS]->npresets; k0++) {   /* BASS's lines (job_dirge, bass_line) */
+            job_t *j;
+            snprintf(name, sizeof name, "dirge/bass_%s", ENGINES[ENGI_BASS]->presets[k0].name);
+            j = add(J_DIRGE, name);
+            j->e = ENGI_BASS;
+            j->pi = (uint8_t)k0;
+            j->arg = (uint8_t)(5u + k0);
         }
     }
     add(J_SONG, "song/4track_mix");

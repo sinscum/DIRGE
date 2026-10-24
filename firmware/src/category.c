@@ -36,6 +36,7 @@ static const char *const PRESET_CAT[16] = {
     "KUBLPUKU",                  /* 12 FM6: TINE EP, BELL, FM BASS, BRASS, PAD, MARIMBA, ORGAN, PLUCK */
     "DD",                        /* 13 SLICE: CHOP, STUTTER */
     "PPPFFPL",                   /* 14 DRONE (DIRGE): DIRGE, BLACK MASS, SHIVER, FURNACE, ASH WIND, GRAVEWAVE, NEON TOMB */
+    "BBBBBL",                    /* 15 BASS (DIRGE): PERTURB, BRUT, GRAVE, SIREN, HEARSE, BONESAW */
 };
 static uint32_t preset_cat(uint32_t e, uint32_t k)    /* factory preset k of engine e */
 {

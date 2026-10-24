@@ -1691,7 +1691,7 @@ function makeMockDevice(opt = {}) {
     E("MIDI", ["USB", "TRS"], 0), E("SYNC", NDASH, 0), E("ROUT", ["CH1-4", "SEL", "CH5-8", "CH9-12", "CH13-16", "TRACK"], 0), D("CPU", F.INT, 0, 0, 0),
     D("SLOT", F.INT, 1, 4, 1), E("NAME", NDASH, 0), E("LOAD", NGO, 0), E("SAVE", NGO, 0),
     E("ENG", ["ANALOG", "-", "PHASE", "LOFI", "SAMPLE", "VOICE", "TRIO", "WHEEL",
-      "GRAIN", "PHYS", "DRUM", "NOISE", "FM6", "SLICE", "DRONE"], 0), D("WEAR", F.PCT, 0, 127, 0),   /* (id 21: DIRGE's WEAR; Felucca's unused SET) */
+      "GRAIN", "PHYS", "DRUM", "NOISE", "FM6", "SLICE", "DRONE", "BASS"], 0), D("WEAR", F.PCT, 0, 127, 0),   /* (id 21: DIRGE's WEAR; Felucca's unused SET) */
     E("CLRSQ", NGO, 0), E("INIT", NGO, 0),
     E("TYPE", ["ROOM", "SPRING", "HALL", "VAULT"], 2),   /* (DIRGE: VAULT) */       /* G_RTYPE (id 24, was G_DRCH): the reverb's model (HALL: 1.2) */
     D("TAPE", F.PCT, 0, 127, 0), D("ROOM", F.PCT, 0, 127, 0),   /* G_DRLVL, G_DRREV: DIRGE's TAPE, ROOM (inert in Felucca) */
@@ -1785,6 +1785,13 @@ function makeMockDevice(opt = {}) {
         P("SHIVER", [80, 20, 110, 0, 85, 30, 0, 20], [80, 90, 127, 100], 0, 5), P("FURNACE", [55, 60, 40, 0, 60, 70, 110, 10], [40, 90, 127, 80], 0, 5),
         P("ASH WIND", [30, 0, 60, 1, 55, 20, 0, 90], [110, 90, 127, 115], 0, 5), P("GRAVEWAVE", [70, 40, 25, 2, 80, 20, 0, 0], [60, 90, 120, 90], 0, 5),
         P("NEON TOMB", [50, 20, 10, 2, 95, 45, 30, 0], [2, 80, 100, 50], 1, 4)] },
+    /* DIRGE's (src/eng_bass.c): engine 15, after DRONE */
+    { name: "BASS", titles: ["OSC", "FILT"], edit: [E("WAVE", ["SAW", "SQR", "PULSE", "DUO"], 0), D("DTN", F.INT, 0, 127, 20),
+        D("SUB", F.PCT, 0, 127, 60), D("CUT", F.CUTOFF, 0, 127, 30), D("RES", F.PCT, 0, 127, 50), D("ENV", F.PCT, 0, 127, 90),
+        D("DCY", F.TIME, 0, 127, 50), D("DRV", F.PCT, 0, 127, 40)],
+      presets: [P("PERTURB", [0, 20, 60, 30, 50, 90, 50, 40], [0, 60, 100, 20], 1, 8), P("BRUT", [3, 35, 40, 25, 70, 110, 35, 90], [0, 50, 90, 15], 1, 8),
+        P("GRAVE", [1, 0, 90, 15, 20, 40, 70, 20], [0, 80, 110, 30], 1, 8), P("SIREN", [2, 10, 30, 40, 100, 70, 25, 50], [0, 40, 80, 10], 1, 8),
+        P("HEARSE", [0, 50, 70, 50, 30, 30, 90, 70], [5, 90, 115, 40], 1, 8), P("BONESAW", [3, 90, 0, 60, 40, 60, 40, 127], [0, 60, 100, 20], 1, 8)] },
   ];
   const FM6_E = ENG.findIndex((e) => e.name === "FM6"), FM6_OWN = FM6.FACTORY_PK.length, DRUM_E = ENG.findIndex((e) => e.name === "DRUM");
   /* factory PATTERNS[] (engines.c; the device loads them from SAVE > PHRASES, presets only suggest one): absolute
@@ -2437,8 +2444,8 @@ function enumShown(d) {
 /* the order the device shows its engines in (src/engines.c ENGINE_ORDER): the lists here follow it, the protocol keeps
    the engine numbers. engineOrder(names): the indices of names in that order, "-" (a reserved number) left out; a name
    the list does not know (another firmware) follows in index order */
-const ENGINE_ORDER = ["DRONE", "ANALOG", "FM6", "DIGITAL", "PHASE", "LOFI", "SAMPLE", "VOICE", "TRIO", "WHEEL", "GRAIN", "PHYS", "NOISE",
-  "SLICE", "DRUM"];
+const ENGINE_ORDER = ["DRONE", "BASS", "ANALOG", "FM6", "DIGITAL", "PHASE", "LOFI", "SAMPLE", "VOICE", "TRIO", "WHEEL", "GRAIN", "PHYS",
+  "NOISE", "DRUM", "SLICE"];   /* (DIRGE: DRONE, BASS first; SLICE last, as engines.c) */
 function engineOrder(names) {
   const rank = (n) => { const k = ENGINE_ORDER.indexOf(n); return k < 0 ? ENGINE_ORDER.length : k; };
   return (names || []).map((n, i) => i).filter((i) => names[i] !== "-")

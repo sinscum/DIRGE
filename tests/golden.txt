@@ -79,6 +79,12 @@ preset/DRONE/03_FURNACE e39f4f0b7294d0a8
 preset/DRONE/04_ASH_WIND 1a785da6f1c590b0
 preset/DRONE/05_GRAVEWAVE 27886a064eb824f8
 preset/DRONE/06_NEON_TOMB b176588205f0bab0
+preset/BASS/00_PERTURB 8a6093cbb0a0869c
+preset/BASS/01_BRUT 9bcd42a6e403ba9c
+preset/BASS/02_GRAVE ea072b26d487a558
+preset/BASS/03_SIREN d6fb820f23015ad4
+preset/BASS/04_HEARSE d66ac77545588154
+preset/BASS/05_BONESAW 95934ad618af2b44
 drums/drum_gm_kit a88dcac7803e88d4
 drums/kit_80 e3de7e091a481244
 drums/kit_10 0cd4e95937dc519c
@@ -107,6 +113,12 @@ dirge/vault 2e287b56cf02fe30
 dirge/vault_inf 4da4759f27594867
 dirge/room ff34914ede40d061
 dirge/wear 51be507a4357f5e0
+dirge/bass_PERTURB 6624f7a5a4cf91dc
+dirge/bass_BRUT d77ab420cf758364
+dirge/bass_GRAVE e67e7da769e91d6c
+dirge/bass_SIREN 07873f58d351ff88
+dirge/bass_HEARSE ba96bed5d16173f4
+dirge/bass_BONESAW cb375a0c86c94388
 song/4track_mix 6667b6c911a3b548
 slicer/gate/ANALOG_ACID 07581a19222c2474
 slicer/song_gate_stut 7e91d788f9dedecc

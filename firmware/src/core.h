@@ -45,9 +45,11 @@
 #else
 #define VOICE_BUDGET NVOICE
 #endif
-#define NENGINES (14 + FELUCCA_SLICE)   /* SLICE (13), then DIRGE's DRONE: the other engines keep their numbers */
+#define NENGINES (15 + FELUCCA_SLICE)   /* SLICE (13), then DIRGE's DRONE and BASS: the other engines keep their numbers */
 #define ENGI_DIGITAL 1u          /* reserved without FELUCCA_FM4: never selectable (eng_ok), its sounds load as FM6 */
+#define ENGI_SLICE 13u           /* (DIRGE: named for the tests; only with FELUCCA_SLICE) */
 #define ENGI_DRONE (13u + FELUCCA_SLICE)   /* DIRGE's DRONE, after SLICE */
+#define ENGI_BASS (14u + FELUCCA_SLICE)    /* DIRGE's BASS, after DRONE */
 /* DIRGE: the EDIT layer has a white key per shown engine (ui_layer.c): FELUCCA_FM4 builds (Felucca's tests of the
  * retired DIGITAL; DIRGE ships none) show DIGITAL in DRONE's place, so one engine is always hidden */
 #define NENG_SHOWN (NENGINES - 1)   /* the engines one can pick: PRESETS, the EDIT layer, the editor,

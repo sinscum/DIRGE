@@ -113,6 +113,7 @@ detuned voices on one note: the darksynth bass and lead settings.
 | Engine | What it is |
 |---|---|
 | **DRONE** (DIRGE) | Detuned polyBLEP saws for drones, pads and supersaw leads ([below](#drone)) |
+| **BASS** (DIRGE) | The darksynth mono bass: oscillators, a sub and a 24 dB filter with its own envelope ([below](#bass)) |
 | **ANALOG** | Virtual analog: oscillators into a state-variable filter (LP / BP / HP) |
 | **PHASE** | CZ-style phase distortion |
 | **LOFI** | Crushed, aliased digital tones |
@@ -136,6 +137,23 @@ low drone. **WAVE:** **DRONE** (two saws at the note, two an octave down), **HIG
 
 Sounds: **DIRGE**, **BLACK MASS**, **SHIVER**, **FURNACE**, **ASH WIND**, **GRAVEWAVE** (a supersaw pad), **NEON TOMB**
 (a mono darksynth lead).
+
+### BASS
+
+The darksynth / synthwave bass: one or two oscillators and a square an octave under them, **DRV** (tanh drive) into a
+**24 dB resonant low-pass** with its own snappy envelope. The sounds are MONO (EDIT > VOICE: LEG for slides, POLY
+for chords of it, 4 voices at most).
+
+| Page | KNOB 1 | KNOB 2 | KNOB 3 | KNOB 4 |
+|---|---|---|---|---|
+| **OSC** (EDIT 1) | WAVE: SAW / SQR / PULSE / DUO | DTN: a second oscillator 0–30 cents up (0: one) | SUB | CUT |
+| **FILT** (EDIT 2) | RES | ENV: how far the filter envelope opens | DCY: its decay, 5 ms – 10 s | DRV |
+
+**ENV** follows the note's velocity: play harder (or accent the step) for a brighter pluck. HOME's knobs: CUT, RES,
+ENV, DRV. A short DCY with ENV up is the plucky bassline; a long DCY a swelling growl.
+
+Sounds: **PERTURB** (the classic saw bass), **BRUT** (DUO, driven hard), **GRAVE** (a deep square sub), **SIREN** (a
+resonant squelch), **HEARSE** (wide and fuzzy), **BONESAW** (distorted, a bass or a lead).
 
 ## 6. ENV and LFO
 
@@ -280,7 +298,7 @@ notes and record nothing.
 | **FX** | the performance effects (below) | T1–T4 mute while held | macros |
 | **GLO** | F3–B3 solo T1–T4 (while held), C4 unmute all, D4 MIDI LEARN, E4 FILL, F4 tap tempo, G4 LATCH | T1–T4 mute (latched) | T1–T4 level |
 | **SCL** | any key: the root | | ROOT, SCALE, CHORD, VOICING |
-| **EDIT** | one engine per key, then INIT (E5) and CLEAN INIT (F5) | the engine's quick actions (DRUM: lane mutes) | ENGINE, SOUND, FAV |
+| **EDIT** | one engine per key (14: SLICE, the last, is KNOB 1's), then INIT (F5) and CLEAN INIT (G5) | the engine's quick actions (DRUM: lane mutes) | ENGINE, SOUND, FAV |
 | **SEQ** | the sequence tools | DRUM lanes | LENGTH, DIV, SWING, GATE |
 | **REC** | CLEAR, CLICK, COUNT-IN, CLICK LEVEL, TAKE (C4) | | CLICK, COUNT-IN, LEVEL |
 

@@ -25,7 +25,8 @@ Free and open source (GPL-3.0-only). Unofficial firmware, not made or endorsed b
 ## What's inside
 
 - **4 tracks**, 8 voices shared between them (12 with the second core on, beta); per track MONO, LEGATO, UNISON and glide
-- **14 engines:** DRONE (DIRGE's), ANALOG, PHASE, LOFI, SAMPLE, VOICE, TRIO, WHEEL, GRAIN, PHYS, DRUM, NOISE, FM6, SLICE
+- **15 engines:** DRONE and BASS (DIRGE's), ANALOG, PHASE, LOFI, SAMPLE, VOICE, TRIO, WHEEL, GRAIN, PHYS, DRUM, NOISE, FM6,
+  SLICE
 - **Effects:** per-track DIST, INSERT (fold, crush, fuzz, phaser, ...), SLICER (a tempo-synced gate and stutter) and
   DUCK (sidechain); shared DELAY, CHORUS and REVERB
   (ROOM, SPRING, HALL, and DIRGE's **VAULT**); DIRGE's **TAPE** page over the whole mix
@@ -40,6 +41,9 @@ Free and open source (GPL-3.0-only). Unofficial firmware, not made or endorsed b
 
 ### What DIRGE adds to Felucca
 
+- **BASS engine**: the darksynth mono bass. SAW / SQR / PULSE / DUO, a detuned second oscillator, a square sub, drive
+  into a 24 dB resonant low-pass with its own velocity-driven envelope. Sounds: PERTURB, BRUT, GRAVE, SIREN, HEARSE,
+  BONESAW.
 - **DRONE engine**, first in the PRESETS list: polyBLEP saws pushed apart by DTN and pulled about by DRFT (one slow
   random walk), a sine SUB, BRTH (noise), DRV (tanh) and a rounded resonant low-pass. WAVE: **DRONE** (two saws at the
   note, two an octave down), **HIGH** or **SUPER** (seven saws at the JP-8000 supersaw's offsets). Sounds: DIRGE,

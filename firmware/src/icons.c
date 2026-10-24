@@ -254,6 +254,7 @@ static uint32_t engine_icon(const char *name)
         {"DRUM", ICON_DRUM},
         {"NOISE", ICON_NOISE},
         {"DRONE", ICON_WAVE},                 /* (DIRGE: a glyph of its own wanted) */
+        {"BASS", ICON_SUB},                   /* (DIRGE) */
         {"FM6", ICON_MOD},                    /* (symbol_modular: six operators patched; a glyph of its own wanted) */
     };
     uint32_t i;

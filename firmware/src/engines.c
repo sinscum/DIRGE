@@ -42,6 +42,7 @@ static uint8_t eng_mem_owner[NPART];       /* engine index + 1 whose state is in
 #include "eng_slice.c"
 #endif
 #include "eng_drone.c"            /* DRONE (DIRGE): four drifting saws */
+#include "eng_bass.c"             /* BASS (DIRGE): the darksynth mono bass (after DRONE: its drone_det) */
 
 /* the editor protocol, user presets and projects store these indices: append, never reorder */
 static const engine_t *const ENGINES[NENGINES] = {
@@ -66,6 +67,7 @@ static const engine_t *const ENGINES[NENGINES] = {
     &ENG_SLICE,                  /* 13 (FELUCCA_SLICE=0 builds without it) */
 #endif
     &ENG_DRONE,                  /* 14 (DIRGE; 13 without SLICE: DIRGE always builds SLICE) */
+    &ENG_BASS,                   /* 15 (DIRGE) */
 };
 
 /* a track's engine number as an index (the audio paths: a compare, cheaper than % NENGINES; a bad number: 0) */
@@ -118,6 +120,7 @@ static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
 #if !FELUCCA_FM4
     13 + FELUCCA_SLICE,          /* DRONE (DIRGE's first; FELUCCA_FM4 builds show DIGITAL instead: core.h) */
 #endif
+    14 + FELUCCA_SLICE,          /* BASS (DIRGE) */
     0,                           /* ANALOG */
     12,                          /* FM6 */
 #if FELUCCA_FM4
@@ -125,10 +128,10 @@ static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
 #endif
     2, 3, 4, 5, 6, 7, 8, 9,      /* PHASE LOFI SAMPLE VOICE TRIO WHEEL GRAIN PHYS */
     11,                          /* NOISE */
-#if FELUCCA_SLICE
-    13,                          /* SLICE */
-#endif
     10,                          /* DRUM */
+#if FELUCCA_SLICE
+    13,                          /* SLICE (DIRGE: last, the EDIT layer's keys hold 14 engines: it is KNOB 1's there) */
+#endif
 };
 
 /* the engines one can pick (engine 1 only with FELUCCA_FM4), in ENGINE_ORDER: eng_ok(e), the n-th of them
